@@ -1,20 +1,12 @@
-import PaletteButton from './PaletteButton'
-import {
-  RocketLaunchIcon as SatelliteIcon,
-  HomeModernIcon,
-  ArrowRightIcon,
-  MinusCircleIcon,
-  PlusCircleIcon,
-} from '@heroicons/react/24/solid'
+import { CubeIcon, HomeModernIcon, ArrowRightIcon } from '@heroicons/react/24/solid'
+import { PaletteButton } from './PaletteButton'
 
-export default function PaletteBar() {
-  return (
-    <div className="fixed top-0 right-3 flex gap-2">
-      <PaletteButton icon={SatelliteIcon} type="LEO" />
-      <PaletteButton icon={MinusCircleIcon} type="MEO" />
-      <PaletteButton icon={PlusCircleIcon} type="GEO" />
-      <PaletteButton icon={HomeModernIcon} type="GND" />
-      <PaletteButton icon={ArrowRightIcon} type="LINK" />
-    </div>
-  )
-}
+export const PaletteBar = () => (
+  <div className="fixed top-2 right-4 flex gap-2 z-50">
+    <PaletteButton icon={CubeIcon}        data-type="LEO"  />
+    <PaletteButton icon={CubeIcon}        data-type="MEO"  />
+    <PaletteButton icon={CubeIcon}        data-type="GEO"  />
+    <PaletteButton icon={HomeModernIcon}  data-type="GND"  />
+    <PaletteButton icon={ArrowRightIcon}  data-type="LINK" />
+  </div>
+)
