@@ -6,6 +6,8 @@ import ReactFlow, {
   Edge,
   useReactFlow,
 } from 'reactflow'
+import MapBackground from './MapBackground'
+import ScaleIndicator from './ScaleIndicator'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
   addNode,
@@ -69,10 +71,12 @@ export default function Canvas() {
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         proOptions={{ hideAttribution: true }}
       >
+        <MapBackground />
         <Background size={2} color="#aaa" />
         <Controls />
         <MiniMap />
       </ReactFlow>
+      <ScaleIndicator />
     </div>
   )
 }
