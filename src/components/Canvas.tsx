@@ -1,4 +1,4 @@
-import ReactFlow, { Background, Controls, MiniMap, Node, Edge } from 'react-flow-renderer'
+import ReactFlow, { Background, Controls, MiniMap, Node, Edge } from 'reactflow'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import { addNode, addEdge, setElements, select } from '../features/network/networkSlice'
 import { useCallback } from 'react'
