@@ -6,6 +6,7 @@ const initialState: NetworkState = {
   nodes: [],
   edges: [],
   selectedId: null,
+  addingType: null,
 }
 
 const networkSlice = createSlice({
@@ -33,8 +34,19 @@ const networkSlice = createSlice({
     select(state, action: PayloadAction<string | null>) {
       state.selectedId = action.payload
     },
+    setAddingType(state, action: PayloadAction<string | null>) {
+      state.addingType = action.payload
+    },
   },
 })
 
-export const { setElements, addNode, addEdge, updateNode, removeElement, select } = networkSlice.actions
+export const {
+  setElements,
+  addNode,
+  addEdge,
+  updateNode,
+  removeElement,
+  select,
+  setAddingType,
+} = networkSlice.actions
 export default networkSlice.reducer
