@@ -1,70 +1,51 @@
 import {
   ComposableMap,
+  ZoomableGroup,
   Geographies,
   Geography,
   Marker,
-  ZoomableGroup,
 } from 'react-simple-maps'
-import { useViewport } from 'reactflow'
-import russia from '../assets/RUS.geo.json'
+import { useWindowSize } from '@/hooks/useWindowSize'
 
-const cities = [
-  { name: 'Москва', coords: [37.6173, 55.7558] },
-  { name: 'Санкт-Петербург', coords: [30.3141, 59.9386] },
-  { name: 'Новосибирск', coords: [82.9204, 55.0084] },
-  { name: 'Екатеринбург', coords: [60.6125, 56.8389] },
-  { name: 'Казань', coords: [49.1064, 55.796] },
-]
+const geoUrl = '/russia-topo.json'
 
-export default function MapBackground() {
-  const { x, y, zoom } = useViewport()
+export const MapBackground = () => {
+  const { width, height } = useWindowSize()
 
   return (
-    <div
-      className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none"
-      style={{
-        transform: `translate(${x}px, ${y}px) scale(${zoom})`,
-        transformOrigin: '0 0',
-      }}
+    <ComposableMap
+      width={width - 320}
+      height={height - 56}
+      projection="geoMercator"
     >
-      <ComposableMap
-        width={1000}
-        height={700}
-        projection="geoMercator"
-        style={{ width: '100%', height: '100%' }}
+      <ZoomableGroup
+        center={[95, 65]}
+        translateExtent={[[-180, -90], [180, 90]]}
+        zoom={1}
+        scale={400}
+        minZoom={1}
+        maxZoom={8}
       >
-        <ZoomableGroup
-          fitWidth
-          fitHeight
-          translateExtent={[[-180, -90], [180, 90]]}
-          projectionScale={400}
-          projectionTranslate={[500, 350]}
-        >
-          <Geographies geography={russia as any}>
-            {({ geographies }) =>
-              geographies.map(geo => (
-                <Geography
-                  key={geo.rsmKey}
-                  geography={geo}
-                  style={{ default: { fill: 'none', stroke: '#000', strokeWidth: 1 } }}
-                />
-              ))
-            }
-          </Geographies>
-          {cities.map(c => (
-            <Marker key={c.name} coordinates={c.coords as any}>
-              <circle r={5} fill="#dc2626" stroke="#fff" strokeWidth={1} />
-              <text
-                textAnchor="middle"
-                y={-8}
-                style={{ fontSize: 12, fill: '#dc2626' }}
-              >
-                {c.name}
-              </text>
-            </Marker>
-          ))}
-        </ZoomableGroup>
-      </ComposableMap>
-    </div>
+        <Geographies geography={geoUrl}>
+          {({ geographies }) =>
+            geographies.map(geo => (
+              <Geography
+                key={geo.rsmKey}
+                geography={geo}
+                fill="none"
+                stroke="#000"
+                strokeWidth={1}
+              />
+            ))
+          }
+        </Geographies>
+        <Marker coordinates={[37.6173, 55.7558]}>
+          <circle r={3} fill="#dc2626" />
+          <text y={-10} textAnchor="middle" className="text-xs fill-red-600">
+            Москва
+          </text>
+        </Marker>
+      </ZoomableGroup>
+    </ComposableMap>
   )
 }

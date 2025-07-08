@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import ReactFlow, {
   Background,
   Controls,
@@ -6,7 +7,7 @@ import ReactFlow, {
   Edge,
   useReactFlow,
 } from 'reactflow'
-import MapBackground from './MapBackground'
+import { MapBackground } from '@/components/MapBackground'
 import ScaleIndicator from './ScaleIndicator'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
@@ -16,10 +17,13 @@ import {
   select,
   setAddingType,
 } from '../features/network/networkSlice'
-import { useCallback } from 'react'
 import toast from 'react-hot-toast'
 
-export default function Canvas() {
+interface CanvasProps {
+  className?: string
+}
+
+export const Canvas = ({ className }: CanvasProps) => {
   const dispatch = useAppDispatch()
   const { nodes, edges, addingType } = useAppSelector(state => state.network)
   const reactFlow = useReactFlow()
@@ -55,7 +59,7 @@ export default function Canvas() {
 
   return (
     <div
-      className={`w-full h-full bg-gray-50 flex ${addingType ? 'cursor-crosshair' : ''}`}
+      className={`w-full h-full bg-gray-50 flex ${addingType ? 'cursor-crosshair' : ''} ${className ?? ''}`}
       onDrop={onDrop}
       onDragOver={onDragOver}
     >

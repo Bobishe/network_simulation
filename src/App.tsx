@@ -1,31 +1,21 @@
-import PaletteBar from './components/PaletteBar'
-import Canvas from './components/Canvas'
-import PropertiesPanel from './components/PropertiesPanel'
-import { useAppSelector } from './hooks'
-import { Toaster } from 'react-hot-toast'
+import { PaletteBar } from '@/components/PaletteBar'
+import { Canvas }     from '@/components/Canvas'
+import { PropertiesPanel } from '@/components/PropertiesPanel'
 
 export default function App() {
-  const selectedId = useAppSelector(state => state.network.selectedId)
-
   return (
-      <div
-        className="h-full grid"
-        style={{ gridTemplateRows: '56px 1fr', gridTemplateColumns: '1fr 320px' }}
-      >
-        <div className="col-span-2 row-start-1 row-end-2">
-          <PaletteBar />
-        </div>
-        <div className="row-start-2 col-start-1 col-end-2 flex">
-          <Canvas />
-        </div>
-        <div className="row-start-2 col-start-2 col-end-3 flex flex-col overflow-y-auto">
-          {selectedId ? (
-            <PropertiesPanel />
-          ) : (
-            <div className="bg-white border-l p-4 h-full">Выберите узел</div>
-          )}
-        </div>
-        <Toaster position="top-right" />
+    <div className="grid grid-rows-[56px_1fr] grid-cols-[1fr_320px] h-screen">
+      {/* top bar + palette */}
+      <div className="row-start-1 col-span-2 flex items-center px-4">
+        <span className="font-semibold">SAT-NET</span>
+        <PaletteBar />
       </div>
+
+      {/* canvas */}
+      <Canvas className="row-start-2 col-start-1" />
+
+      {/* right props panel */}
+      <PropertiesPanel className="row-start-2 col-start-2 border-l overflow-y-auto" />
+    </div>
   )
 }
