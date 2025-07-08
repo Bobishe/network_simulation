@@ -4,4 +4,5 @@ export interface NetworkState {
   nodes: Node[]
   edges: Edge[]
   selectedId: string | null
+  addingType: string | null
 }

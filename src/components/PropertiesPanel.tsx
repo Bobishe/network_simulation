@@ -2,6 +2,7 @@ import { Formik, Form, Field } from 'formik'
 import * as Yup from 'yup'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import { updateNode, select } from '../features/network/networkSlice'
+import toast from 'react-hot-toast'
 
 export default function PropertiesPanel() {
   const dispatch = useAppDispatch()
@@ -11,7 +12,7 @@ export default function PropertiesPanel() {
   if (!node) return null
 
   return (
-    <div className="w-80 border-l p-4 overflow-y-auto" data-testid="properties-panel">
+    <div className="bg-white border-l px-4 py-6 overflow-y-auto" data-testid="properties-panel">
       <div className="font-semibold mb-4">
         {node.type} • {node.id}
       </div>
@@ -21,6 +22,7 @@ export default function PropertiesPanel() {
         onSubmit={values => {
           dispatch(updateNode({ ...node, data: { ...node.data, label: values.label } }))
           dispatch(select(null))
+          toast.success('Свойства сохранены')
         }}
       >
         {() => (

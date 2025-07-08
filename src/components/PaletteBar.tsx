@@ -1,42 +1,32 @@
-import { useState } from 'react'
-import { Squares2X2Icon, GlobeAltIcon, CubeIcon, LinkIcon } from '@heroicons/react/24/outline'
-import classNames from 'classnames'
+import PaletteButton from './PaletteButton'
+import {
+  CubeIcon,
+  CubeTransparentIcon,
+  HomeModernIcon,
+  ArrowRightIcon,
+} from '@heroicons/react/24/solid'
 
 const items = [
-  { id: 'sat-leo', icon: GlobeAltIcon, label: 'Satellite (LEO)' },
-  { id: 'sat-meo', icon: CubeIcon, label: 'Satellite (MEO)' },
-  { id: 'sat-geo', icon: Squares2X2Icon, label: 'Satellite (GEO)' },
-  { id: 'ground', icon: GlobeAltIcon, label: 'Ground Station' },
-  { id: 'link', icon: LinkIcon, label: 'Link' },
+  { type: 'leo', icon: CubeIcon, label: 'LEO' },
+  { type: 'meo', icon: CubeTransparentIcon, label: 'MEO' },
+  { type: 'geo', icon: CubeIcon, label: 'GEO', ring: true },
+  { type: 'gnd', icon: HomeModernIcon, label: 'GND' },
+  { type: 'link', icon: ArrowRightIcon, label: 'LINK' },
 ]
 
-interface PaletteBarProps {
-  onSelect: (type: string) => void
-}
-
-export default function PaletteBar({ onSelect }: PaletteBarProps) {
-  const [active, setActive] = useState<string | null>(null)
-
+export default function PaletteBar() {
   return (
-    <div className="h-14 flex items-center justify-between px-4 bg-gray-800 text-white">
-      <div className="font-bold">SAT-NET</div>
-      <div className="flex gap-2">
-        {items.map(({ id, icon: Icon }) => (
-          <button
-            key={id}
-            className={classNames('w-10 h-10 flex items-center justify-center rounded border', {
-              'bg-blue-500': active === id,
-              'bg-gray-700': active !== id,
-            })}
-            onClick={() => {
-              setActive(id)
-              onSelect(id)
-            }}
-          >
-            <Icon className="w-5 h-5" />
-          </button>
-        ))}
-      </div>
+    <div className="sticky top-0 z-10 bg-white flex items-center px-4 h-14">
+      <div className="font-bold mr-auto">SAT-NET</div>
+      {items.map(item => (
+        <PaletteButton
+          key={item.type}
+          icon={item.icon}
+          label={item.label}
+          type={item.type}
+          ring={'ring' in item ? item.ring : undefined}
+        />
+      ))}
     </div>
   )
 }
