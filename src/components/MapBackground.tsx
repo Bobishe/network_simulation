@@ -15,15 +15,18 @@ export default function MapBackground() {
 
   return (
     <div
-      className="absolute inset-0 pointer-events-none"
-      style={{ transform: `translate(${x}px, ${y}px) scale(${zoom})`, transformOrigin: '0 0' }}
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      style={{
+        transform: `translate(${x}px, ${y}px) scale(${zoom})`,
+        transformOrigin: '0 0',
+      }}
     >
       <ComposableMap
-        width={800}
-        height={500}
+        width={1000}
+        height={700}
         projection="geoMercator"
-        projectionConfig={{ scale: 350, center: [100, 65] }}
-        style={{ width: 800, height: 500 }}
+        projectionConfig={{ scale: 420, center: [105, 60] }}
+        style={{ width: '100%', height: '100%' }}
       >
         <Geographies geography={russia as any}>
           {({ geographies }) =>
@@ -38,11 +41,11 @@ export default function MapBackground() {
         </Geographies>
         {cities.map(c => (
           <Marker key={c.name} coordinates={c.coords as any}>
-            <circle r={2} fill="#f00" />
+            <circle r={5} fill="#dc2626" stroke="#fff" strokeWidth={1} />
             <text
               textAnchor="middle"
-              y={-4}
-              style={{ fontSize: 10, fill: '#f00' }}
+              y={-8}
+              style={{ fontSize: 12, fill: '#dc2626' }}
             >
               {c.name}
             </text>
