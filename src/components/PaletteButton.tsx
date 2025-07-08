@@ -31,8 +31,15 @@ export default function PaletteButton({ icon: Icon, label, type, ring }: Palette
       )}
     >
       <span className="relative">
-        <Icon className="w-5 h-5 pointer-events-none" />
-        {ring && <span className="absolute inset-0 rounded-full ring-2 ring-current" />}
+        <Icon
+          className={classNames(
+            'w-5 h-5 pointer-events-none text-gray-600',
+            { 'text-white': active }
+          )}
+        />
+        {ring && (
+          <span className="absolute inset-0 rounded-full ring-2 ring-current pointer-events-none" />
+        )}
       </span>
     </button>
   )
