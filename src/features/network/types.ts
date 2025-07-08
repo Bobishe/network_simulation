@@ -1,4 +1,4 @@
-import { Node, Edge } from 'react-flow-renderer'
+import { Node, Edge } from 'reactflow'
 
 export interface NetworkState {
   nodes: Node[]
