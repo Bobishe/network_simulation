@@ -1,16 +1,13 @@
 import { ComponentType, SVGProps } from 'react'
-import classNames from 'classnames'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import { setAddingType } from '../features/network/networkSlice'
 
 interface PaletteButtonProps {
   icon: ComponentType<SVGProps<SVGSVGElement>>
-  label: string
   type: string
-  ring?: boolean
 }
 
-export default function PaletteButton({ icon: Icon, label, type, ring }: PaletteButtonProps) {
+export default function PaletteButton({ icon: Icon, type }: PaletteButtonProps) {
   const dispatch = useAppDispatch()
   const addingType = useAppSelector(state => state.network.addingType)
   const active = addingType === type
@@ -18,29 +15,17 @@ export default function PaletteButton({ icon: Icon, label, type, ring }: Palette
   return (
     <button
       type="button"
-      title={label}
+      className={`w-10 h-10 flex items-center justify-center rounded ${
+        active ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
+      }`}
       draggable
       onDragStart={e => {
         e.dataTransfer.setData('application/reactflow', type)
         e.dataTransfer.effectAllowed = 'move'
       }}
       onClick={() => dispatch(setAddingType(active ? null : type))}
-      className={classNames(
-        'flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200 mr-2',
-        { 'bg-blue-500 text-white': active }
-      )}
     >
-      <span className="relative">
-        <Icon
-          className={classNames(
-            'w-5 h-5 pointer-events-none text-gray-600',
-            { 'text-white': active }
-          )}
-        />
-        {ring && (
-          <span className="absolute inset-0 rounded-full ring-2 ring-current pointer-events-none" />
-        )}
-      </span>
+      <Icon className="w-6 h-6" />
     </button>
   )
 }
