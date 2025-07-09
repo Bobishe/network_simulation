@@ -16,8 +16,8 @@ const items = [
 
 export default function PaletteBar() {
   return (
-    <div className="sticky top-0 z-10 bg-white flex items-center px-4 h-14">
-      <div className="font-bold mr-auto">SAT-NET</div>
+    <div className="sticky left-0 top-0 z-10 bg-white flex flex-col items-center p-2 h-full w-20 border-r">
+      <div className="font-bold mb-4">SAT-NET</div>
       {items.map(item => (
         <PaletteButton
           key={item.type}
