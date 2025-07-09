@@ -19,7 +19,7 @@ import {
   select,
   setAddingType,
 } from '../features/network/networkSlice'
-import { latLonToPos, posToLatLon } from '../utils/geo'
+import { latLonToPos, posToLatLon, distanceKm } from '../utils/geo'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
@@ -29,16 +29,27 @@ export default function Canvas() {
   const reactFlow = useReactFlow()
   const [linkSource, setLinkSource] = useState<string | null>(null)
 
-  const onConnect = useCallback((params: Connection) => {
-    dispatch(
-      addEdge({
-        id: `${params.source}-${params.target}-${Date.now()}`,
-        source: params.source!,
-        target: params.target!,
-        style: { stroke: 'black' },
-      })
-    )
-  }, [dispatch])
+  const onConnect = useCallback(
+    (params: Connection) => {
+      const src = nodes.find(n => n.id === params.source)
+      const tgt = nodes.find(n => n.id === params.target)
+      let distance = 0
+      if (src?.data && tgt?.data) {
+        distance = distanceKm(src.data.lat, src.data.lon, tgt.data.lat, tgt.data.lon)
+      }
+      dispatch(
+        addEdge({
+          id: `${params.source}-${params.target}-${Date.now()}`,
+          source: params.source!,
+          target: params.target!,
+          style: { stroke: 'black' },
+          data: { distance },
+          label: `${Math.round(distance)} km`,
+        })
+      )
+    },
+    [dispatch, nodes]
+  )
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -111,8 +122,23 @@ export default function Canvas() {
               dispatch(updateNode({ ...node, className: 'ring-2 ring-blue-500' }))
             } else {
               if (linkSource !== node.id) {
+                const src = nodes.find(n => n.id === linkSource)
+                const tgt = nodes.find(n => n.id === node.id)
+                let distance = 0
+                if (src?.data && tgt?.data) {
+                  distance = distanceKm(src.data.lat, src.data.lon, tgt.data.lat, tgt.data.lon)
+                }
                 const id = `e-${linkSource}-${node.id}-${Date.now()}`
-                dispatch(addEdge({ id, source: linkSource, target: node.id, style: { stroke: 'black' } }))
+                dispatch(
+                  addEdge({
+                    id,
+                    source: linkSource,
+                    target: node.id,
+                    style: { stroke: 'black' },
+                    data: { distance },
+                    label: `${Math.round(distance)} km`,
+                  })
+                )
               }
               const srcNode = nodes.find(n => n.id === linkSource)
               if (srcNode) dispatch(updateNode({ ...srcNode, className: undefined }))
