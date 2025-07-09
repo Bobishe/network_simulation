@@ -28,7 +28,6 @@ import {
 } from '../utils/geo'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import NetworkNode from './NetworkNode'
 
 export default function Canvas() {
   const dispatch = useAppDispatch()
@@ -120,8 +119,6 @@ export default function Canvas() {
         style={{ width: 360 * SCALE, height: 180 * SCALE }}
         nodes={nodes}
         edges={edges}
-        nodeTypes={{ leo: NetworkNode, meo: NetworkNode, geo: NetworkNode, gnd: NetworkNode }}
-        minZoom={0.05}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
