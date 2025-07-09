@@ -5,6 +5,7 @@ import ReactFlow, {
   Edge,
   NodeChange,
   EdgeChange,
+  Connection,
   applyNodeChanges,
   applyEdgeChanges,
   useReactFlow,
@@ -27,7 +28,16 @@ export default function Canvas() {
   const reactFlow = useReactFlow()
   const [linkSource, setLinkSource] = useState<string | null>(null)
 
-  const onConnect = useCallback((params: Edge) => dispatch(addEdge(params)), [dispatch])
+  const onConnect = useCallback((params: Connection) => {
+    dispatch(
+      addEdge({
+        id: `${params.source}-${params.target}-${Date.now()}`,
+        source: params.source!,
+        target: params.target!,
+        style: { stroke: 'black' },
+      })
+    )
+  }, [dispatch])
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -103,9 +113,11 @@ export default function Canvas() {
               dispatch(setAddingType(null))
               toast.success('Связь создана')
             }
+          } else {
+            dispatch(select(node.id))
           }
         }}
-        onNodeDoubleClick={(_, node) => dispatch(select(node.id))}
+        onEdgeClick={(_, edge) => addingType !== 'link' && dispatch(select(edge.id))}
         fitView
         snapToGrid
         snapGrid={[25, 25]}
