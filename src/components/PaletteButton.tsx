@@ -26,7 +26,7 @@ export default function PaletteButton({ icon: Icon, label, type, ring }: Palette
       }}
       onClick={() => dispatch(setAddingType(active ? null : type))}
       className={classNames(
-        'flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200 mr-2',
+        'flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200 mb-2',
         { 'bg-blue-500 text-white': active }
       )}
     >
