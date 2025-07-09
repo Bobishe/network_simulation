@@ -40,6 +40,7 @@ export default function PropertiesPanel() {
         </div>
         <Formik
           initialValues={initialValues}
+          enableReinitialize
           validationSchema={Yup.object(schemaShape)}
           onSubmit={values => {
             const position = latLonToPos(Number(values.lat), Number(values.lon))
@@ -90,6 +91,7 @@ export default function PropertiesPanel() {
         <div className="font-semibold mb-4">LINK • {edge.id}</div>
         <Formik
           initialValues={initialValues}
+          enableReinitialize
           validationSchema={Yup.object({
             bandwidth: Yup.number().required(),
             latency: Yup.number().required(),
