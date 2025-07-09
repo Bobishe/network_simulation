@@ -4,7 +4,6 @@ import {
   CubeTransparentIcon,
   HomeModernIcon,
   ArrowRightIcon,
-  TrashIcon,
 } from "@heroicons/react/24/solid";
 
 const items = [
@@ -13,12 +12,11 @@ const items = [
   { type: "geo", icon: CubeIcon, label: "GEO", ring: true },
   { type: "gnd", icon: HomeModernIcon, label: "GND" },
   { type: "link", icon: ArrowRightIcon, label: "LINK" },
-  { type: "delete", icon: TrashIcon, label: "DEL" },
 ];
 
 export default function PaletteBar() {
   return (
-    <div className="sticky left-0 top-0 z-10 bg-white flex flex-col items-center p-2 h-full w-20 border-r">
+    <div className="sticky left-0 top-12 z-10 bg-white flex flex-col items-center p-2 h-full w-20 border-r">
       {items.map((item) => (
         <PaletteButton
           key={item.type}
