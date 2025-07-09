@@ -2,8 +2,11 @@ import ReactFlow, {
   Background,
   Controls,
   MiniMap,
-  Node,
   Edge,
+  NodeChange,
+  EdgeChange,
+  applyNodeChanges,
+  applyEdgeChanges,
   useReactFlow,
 } from 'reactflow'
 import { useAppDispatch, useAppSelector } from '../hooks'
@@ -23,9 +26,21 @@ export default function Canvas() {
   const reactFlow = useReactFlow()
 
   const onConnect = useCallback((params: Edge) => dispatch(addEdge(params)), [dispatch])
+
   const onNodesChange = useCallback(
-    (nodes: Node[]) => dispatch(setElements({ nodes, edges })),
-    [dispatch, edges]
+    (changes: NodeChange[]) => {
+      const updatedNodes = applyNodeChanges(changes, nodes)
+      dispatch(setElements({ nodes: updatedNodes, edges }))
+    },
+    [dispatch, nodes, edges]
+  )
+
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      const updatedEdges = applyEdgeChanges(changes, edges)
+      dispatch(setElements({ nodes, edges: updatedEdges }))
+    },
+    [dispatch, nodes, edges]
   )
 
   const onDrop = useCallback(
@@ -33,10 +48,9 @@ export default function Canvas() {
       event.preventDefault()
       const type = event.dataTransfer.getData('application/reactflow')
       if (!type) return
-      const bounds = event.currentTarget.getBoundingClientRect()
-      const position = reactFlow.project({
-        x: event.clientX - bounds.left,
-        y: event.clientY - bounds.top,
+      const position = reactFlow.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
       })
       const id = `${type}-${Date.now()}`
       dispatch(addNode({ id, type, position, data: { label: id } }))
@@ -61,6 +75,7 @@ export default function Canvas() {
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeDoubleClick={(_, node) => dispatch(select(node.id))}
         fitView
