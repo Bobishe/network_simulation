@@ -14,16 +14,18 @@ import {
   addNode,
   addEdge,
   setElements,
+  updateNode,
   select,
   setAddingType,
 } from '../features/network/networkSlice'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
 export default function Canvas() {
   const dispatch = useAppDispatch()
   const { nodes, edges, addingType } = useAppSelector(state => state.network)
   const reactFlow = useReactFlow()
+  const [linkSource, setLinkSource] = useState<string | null>(null)
 
   const onConnect = useCallback((params: Edge) => dispatch(addEdge(params)), [dispatch])
 
@@ -65,6 +67,14 @@ export default function Canvas() {
     event.dataTransfer.dropEffect = 'move'
   }, [])
 
+  useEffect(() => {
+    if (addingType !== 'link' && linkSource) {
+      const srcNode = nodes.find(n => n.id === linkSource)
+      if (srcNode) dispatch(updateNode({ ...srcNode, className: undefined }))
+      setLinkSource(null)
+    }
+  }, [addingType, linkSource, nodes, dispatch])
+
   return (
     <div
       className={`w-full h-full bg-gray-50 flex ${addingType ? 'cursor-crosshair' : ''}`}
@@ -77,6 +87,24 @@ export default function Canvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeClick={(_, node) => {
+          if (addingType === 'link') {
+            if (!linkSource) {
+              setLinkSource(node.id)
+              dispatch(updateNode({ ...node, className: 'ring-2 ring-blue-500' }))
+            } else {
+              if (linkSource !== node.id) {
+                const id = `e-${linkSource}-${node.id}-${Date.now()}`
+                dispatch(addEdge({ id, source: linkSource, target: node.id, style: { stroke: 'black' } }))
+              }
+              const srcNode = nodes.find(n => n.id === linkSource)
+              if (srcNode) dispatch(updateNode({ ...srcNode, className: undefined }))
+              setLinkSource(null)
+              dispatch(setAddingType(null))
+              toast.success('Связь создана')
+            }
+          }
+        }}
         onNodeDoubleClick={(_, node) => dispatch(select(node.id))}
         fitView
         snapToGrid
