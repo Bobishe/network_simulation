@@ -27,8 +27,8 @@ export default function PropertiesPanel() {
 
     const schemaShape: any = {
       label: Yup.string().required(),
-      lat: Yup.number().required(),
-      lon: Yup.number().required(),
+      lat: Yup.number().min(0).max(180).required(),
+      lon: Yup.number().min(0).max(360).required(),
     }
     if (isSatellite) schemaShape.altitude = Yup.number().required()
     if (isGround) schemaShape.location = Yup.string().required()
