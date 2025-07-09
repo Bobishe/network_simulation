@@ -19,7 +19,13 @@ import {
   select,
   setAddingType,
 } from '../features/network/networkSlice'
-import { latLonToPos, posToLatLon, distanceKm } from '../utils/geo'
+import {
+  latLonToPos,
+  posToLatLon,
+  distanceKm,
+  SCALE,
+  updateEdgesDistances,
+} from '../utils/geo'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
@@ -58,7 +64,8 @@ export default function Canvas() {
         const { lat, lon } = posToLatLon(n.position)
         return { ...n, data: { ...n.data, lat, lon } }
       })
-      dispatch(setElements({ nodes: updatedNodes, edges }))
+      const updatedEdges = updateEdgesDistances(updatedNodes, edges)
+      dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
     },
     [dispatch, nodes, edges]
   )
@@ -109,7 +116,7 @@ export default function Canvas() {
       onDragOver={onDragOver}
     >
       <ReactFlow
-        style={{ width: 1800, height: 900 }}
+        style={{ width: 360 * SCALE, height: 180 * SCALE }}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
@@ -153,7 +160,7 @@ export default function Canvas() {
         onEdgeClick={(_, edge) => addingType !== 'link' && dispatch(select(edge.id))}
         fitView
         snapToGrid
-        snapGrid={[25, 25]}
+        snapGrid={[SCALE / 60, SCALE / 60]}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         proOptions={{ hideAttribution: true }}
       >

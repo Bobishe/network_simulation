@@ -1,4 +1,4 @@
-export const SCALE = 5
+export const SCALE = 300
 
 /**
  * Convert positive latitude/longitude values to canvas position.
@@ -45,4 +45,30 @@ export function distanceKm(
     Math.cos(lat1r) * Math.cos(lat2r) * Math.sin(dLon / 2) ** 2
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   return EARTH_RADIUS_KM * c
+}
+
+import type { Node, Edge } from 'reactflow'
+
+/**
+ * Recalculate edge distances based on current node coordinates.
+ */
+export function updateEdgesDistances(nodes: Node[], edges: Edge[]): Edge[] {
+  return edges.map(e => {
+    const src = nodes.find(n => n.id === e.source)
+    const tgt = nodes.find(n => n.id === e.target)
+    if (src?.data && tgt?.data) {
+      const distance = distanceKm(
+        src.data.lat,
+        src.data.lon,
+        tgt.data.lat,
+        tgt.data.lon
+      )
+      return {
+        ...e,
+        data: { ...e.data, distance },
+        label: `${Math.round(distance)} km`,
+      }
+    }
+    return e
+  })
 }
