@@ -27,6 +27,10 @@ const networkSlice = createSlice({
       const idx = state.nodes.findIndex(n => n.id === action.payload.id)
       if (idx !== -1) state.nodes[idx] = action.payload
     },
+    updateEdge(state, action: PayloadAction<Edge>) {
+      const idx = state.edges.findIndex(e => e.id === action.payload.id)
+      if (idx !== -1) state.edges[idx] = action.payload
+    },
     removeElement(state, action: PayloadAction<string>) {
       state.nodes = state.nodes.filter(n => n.id !== action.payload)
       state.edges = state.edges.filter(e => e.id !== action.payload && e.source !== action.payload && e.target !== action.payload)
@@ -45,6 +49,7 @@ export const {
   addNode,
   addEdge,
   updateNode,
+  updateEdge,
   removeElement,
   select,
   setAddingType,
