@@ -19,6 +19,7 @@ import {
   select,
   setAddingType,
 } from '../features/network/networkSlice'
+import { latLonToPos, posToLatLon } from '../utils/geo'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
@@ -41,7 +42,11 @@ export default function Canvas() {
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      const updatedNodes = applyNodeChanges(changes, nodes)
+      const changed = applyNodeChanges(changes, nodes)
+      const updatedNodes = changed.map(n => {
+        const { lat, lon } = posToLatLon(n.position)
+        return { ...n, data: { ...n.data, lat, lon } }
+      })
       dispatch(setElements({ nodes: updatedNodes, edges }))
     },
     [dispatch, nodes, edges]
@@ -65,7 +70,8 @@ export default function Canvas() {
         y: event.clientY,
       })
       const id = `${type}-${Date.now()}`
-      dispatch(addNode({ id, type, position, data: { label: id } }))
+      const { lat, lon } = posToLatLon(position)
+      dispatch(addNode({ id, type, position, data: { label: id, lat, lon } }))
       dispatch(setAddingType(null))
       toast.success('Узел добавлен')
     },
@@ -87,11 +93,12 @@ export default function Canvas() {
 
   return (
     <div
-      className={`w-full h-full bg-gray-50 flex ${addingType ? 'cursor-crosshair' : ''}`}
+      className={`w-full h-full map-bg flex ${addingType ? 'cursor-crosshair' : ''}`}
       onDrop={onDrop}
       onDragOver={onDragOver}
     >
       <ReactFlow
+        style={{ width: 1800, height: 900 }}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
