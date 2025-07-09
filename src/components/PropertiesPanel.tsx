@@ -2,6 +2,7 @@ import { Formik, Form, Field } from 'formik'
 import * as Yup from 'yup'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import { updateNode, updateEdge, select } from '../features/network/networkSlice'
+import { latLonToPos } from '../utils/geo'
 import toast from 'react-hot-toast'
 
 export default function PropertiesPanel() {
@@ -18,11 +19,17 @@ export default function PropertiesPanel() {
     const isGround = node.type === 'gnd'
     const initialValues: any = {
       label: node.data?.label || '',
+      lat: node.data?.lat ?? 0,
+      lon: node.data?.lon ?? 0,
     }
     if (isSatellite) initialValues.altitude = node.data?.altitude || ''
     if (isGround) initialValues.location = node.data?.location || ''
 
-    const schemaShape: any = { label: Yup.string().required() }
+    const schemaShape: any = {
+      label: Yup.string().required(),
+      lat: Yup.number().required(),
+      lon: Yup.number().required(),
+    }
     if (isSatellite) schemaShape.altitude = Yup.number().required()
     if (isGround) schemaShape.location = Yup.string().required()
 
@@ -35,7 +42,8 @@ export default function PropertiesPanel() {
           initialValues={initialValues}
           validationSchema={Yup.object(schemaShape)}
           onSubmit={values => {
-            dispatch(updateNode({ ...node, data: { ...node.data, ...values } }))
+            const position = latLonToPos(Number(values.lat), Number(values.lon))
+            dispatch(updateNode({ ...node, position, data: { ...node.data, ...values, lat: Number(values.lat), lon: Number(values.lon) } }))
             dispatch(select(null))
             toast.success('Свойства сохранены')
           }}
@@ -44,6 +52,10 @@ export default function PropertiesPanel() {
             <Form className="flex flex-col gap-2">
               <label className="text-sm">Label</label>
               <Field name="label" className="border rounded p-1" />
+              <label className="text-sm">Latitude</label>
+              <Field name="lat" type="number" className="border rounded p-1" />
+              <label className="text-sm">Longitude</label>
+              <Field name="lon" type="number" className="border rounded p-1" />
               {isSatellite && (
                 <>
                   <label className="text-sm">Altitude</label>
