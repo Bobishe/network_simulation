@@ -16,6 +16,7 @@ import {
   addEdge,
   setElements,
   updateNode,
+  removeElement,
   select,
   setAddingType,
 } from '../features/network/networkSlice'
@@ -123,7 +124,10 @@ export default function Canvas() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={(_, node) => {
-          if (addingType === 'link') {
+          if (addingType === 'delete') {
+            dispatch(removeElement(node.id))
+            toast.success('Удалено')
+          } else if (addingType === 'link') {
             if (!linkSource) {
               setLinkSource(node.id)
               dispatch(updateNode({ ...node, className: 'ring-2 ring-blue-500' }))
@@ -157,7 +161,14 @@ export default function Canvas() {
             dispatch(select(node.id))
           }
         }}
-        onEdgeClick={(_, edge) => addingType !== 'link' && dispatch(select(edge.id))}
+        onEdgeClick={(_, edge) => {
+          if (addingType === 'delete') {
+            dispatch(removeElement(edge.id))
+            toast.success('Удалено')
+          } else if (addingType !== 'link') {
+            dispatch(select(edge.id))
+          }
+        }}
         fitView
         snapToGrid
         snapGrid={[SCALE / 60, SCALE / 60]}

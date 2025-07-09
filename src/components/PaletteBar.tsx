@@ -4,6 +4,7 @@ import {
   CubeTransparentIcon,
   HomeModernIcon,
   ArrowRightIcon,
+  TrashIcon,
 } from "@heroicons/react/24/solid";
 
 const items = [
@@ -12,6 +13,7 @@ const items = [
   { type: "geo", icon: CubeIcon, label: "GEO", ring: true },
   { type: "gnd", icon: HomeModernIcon, label: "GND" },
   { type: "link", icon: ArrowRightIcon, label: "LINK" },
+  { type: "delete", icon: TrashIcon, label: "DEL" },
 ];
 
 export default function PaletteBar() {
