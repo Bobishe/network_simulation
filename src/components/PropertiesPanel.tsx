@@ -1,8 +1,13 @@
 import { Formik, Form, Field } from 'formik'
 import * as Yup from 'yup'
 import { useAppDispatch, useAppSelector } from '../hooks'
-import { updateNode, updateEdge, select } from '../features/network/networkSlice'
-import { latLonToPos } from '../utils/geo'
+import {
+  updateNode,
+  updateEdge,
+  select,
+  setElements,
+} from '../features/network/networkSlice'
+import { latLonToPos, updateEdgesDistances } from '../utils/geo'
 import toast from 'react-hot-toast'
 
 export default function PropertiesPanel() {
@@ -43,8 +48,26 @@ export default function PropertiesPanel() {
           enableReinitialize
           validationSchema={Yup.object(schemaShape)}
           onSubmit={values => {
-            const position = latLonToPos(Number(values.lat), Number(values.lon))
-            dispatch(updateNode({ ...node, position, data: { ...node.data, ...values, lat: Number(values.lat), lon: Number(values.lon) } }))
+            const position = latLonToPos(
+              Number(values.lat),
+              Number(values.lon)
+            )
+            const updatedNodes = nodes.map(n =>
+              n.id === node.id
+                ? {
+                    ...node,
+                    position,
+                    data: {
+                      ...node.data,
+                      ...values,
+                      lat: Number(values.lat),
+                      lon: Number(values.lon),
+                    },
+                  }
+                : n
+            )
+            const updatedEdges = updateEdgesDistances(updatedNodes, edges)
+            dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
             dispatch(select(null))
             toast.success('Свойства сохранены')
           }}
