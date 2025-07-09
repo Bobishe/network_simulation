@@ -1,4 +1,4 @@
-import { NodeProps, useStoreState } from 'reactflow'
+import { NodeProps, useStore } from 'reactflow'
 import { CubeIcon, CubeTransparentIcon, HomeModernIcon } from '@heroicons/react/24/solid'
 import classNames from 'classnames'
 
@@ -10,7 +10,7 @@ const typeIcons: Record<string, React.ComponentType<any>> = {
 }
 
 export default function NetworkNode({ data, type, selected, className }: NodeProps<any>) {
-  const zoom = useStoreState(state => state.transform[2])
+  const zoom = useStore(state => state.transform[2])
   const Icon = typeIcons[type] || CubeIcon
   const ring = type === 'geo'
 
