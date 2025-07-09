@@ -18,12 +18,11 @@ export default function App() {
         <div className="row-start-2 col-start-1 col-end-2 flex">
           <Canvas />
         </div>
-        <div className="row-start-2 col-start-2 col-end-3 flex flex-col overflow-y-auto">
-          {selectedId ? (
-            <PropertiesPanel />
-          ) : (
-            <div className="bg-white border-l p-4 h-full">Выберите узел</div>
-          )}
+        <div
+          className="row-start-2 col-start-2 col-end-3"
+          style={{ display: selectedId ? 'block' : 'none' }}
+        >
+          <PropertiesPanel />
         </div>
         <Toaster position="top-right" />
       </div>
