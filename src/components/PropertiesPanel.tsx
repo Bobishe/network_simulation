@@ -1,4 +1,6 @@
-import { Formik, Form, Field } from 'formik'
+import { Formik, Form, Field, useFormikContext } from 'formik'
+import { useEffect } from 'react'
+import type { Node } from 'reactflow'
 import * as Yup from 'yup'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
@@ -9,6 +11,38 @@ import {
 } from '../features/network/networkSlice'
 import { latLonToPos, updateEdgesDistances } from '../utils/geo'
 import toast from 'react-hot-toast'
+
+function NodePositionUpdater({ node }: { node: Node }) {
+  const { values } = useFormikContext<any>()
+  const dispatch = useAppDispatch()
+  const { nodes, edges } = useAppSelector(state => state.network)
+
+  useEffect(() => {
+    if (!node) return
+    const lat = Number(values.lat)
+    const lon = Number(values.lon)
+    if (
+      isNaN(lat) ||
+      isNaN(lon) ||
+      (node.data?.lat === lat && node.data?.lon === lon)
+    )
+      return
+    const position = latLonToPos(lat, lon)
+    const updatedNodes = nodes.map(n =>
+      n.id === node.id
+        ? {
+            ...node,
+            position,
+            data: { ...node.data, ...values, lat, lon },
+          }
+        : n
+    )
+    const updatedEdges = updateEdgesDistances(updatedNodes, edges)
+    dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
+  }, [values.lat, values.lon])
+
+  return null
+}
 
 export default function PropertiesPanel() {
   const dispatch = useAppDispatch()
@@ -74,6 +108,7 @@ export default function PropertiesPanel() {
         >
           {() => (
             <Form className="flex flex-col gap-2">
+              <NodePositionUpdater node={node} />
               <label className="text-sm">Label</label>
               <Field name="label" className="border rounded p-1" />
               <label className="text-sm">Latitude</label>
