@@ -1,4 +1,4 @@
-import { NodeProps, useStore } from 'reactflow'
+import { NodeProps, useStore, Handle, Position } from 'reactflow'
 import { CubeIcon, CubeTransparentIcon, HomeModernIcon } from '@heroicons/react/24/solid'
 import classNames from 'classnames'
 
@@ -25,7 +25,9 @@ export default function NetworkNode({ data, type, selected, className }: NodePro
         )}
         style={{ width: 8, height: 8 }}
       >
+        <Handle type="target" position={Position.Left} className="w-1 h-1" />
         <Icon className="w-2 h-2" />
+        <Handle type="source" position={Position.Right} className="w-1 h-1" />
       </div>
     )
   }
@@ -39,8 +41,10 @@ export default function NetworkNode({ data, type, selected, className }: NodePro
         className
       )}
     >
+      <Handle type="target" position={Position.Left} className="w-2 h-2" />
       <Icon className="w-4 h-4" />
       <span>{data?.label}</span>
+      <Handle type="source" position={Position.Right} className="w-2 h-2" />
     </div>
   )
 }
