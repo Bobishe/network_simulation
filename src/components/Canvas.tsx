@@ -2,6 +2,7 @@ import ReactFlow, {
   Background,
   Controls,
   MiniMap,
+  Edge,
   NodeChange,
   EdgeChange,
   Connection,
@@ -9,9 +10,8 @@ import ReactFlow, {
   applyEdgeChanges,
   useReactFlow,
 } from 'reactflow'
-import type { NodeTypes, Node, Edge as RFEdge } from 'reactflow'
+import type { NodeTypes } from 'reactflow'
 import NetworkNode from './NetworkNode'
-import ClusterNode from './ClusterNode'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
   addNode,
@@ -28,10 +28,9 @@ import {
   distanceKm,
   SCALE,
   updateEdgesDistances,
-  coordKey,
 } from '../utils/geo'
 import { ALTITUDE_RANGES } from '../utils/altitudes'
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
 const nodeTypes: NodeTypes = {
@@ -40,7 +39,6 @@ const nodeTypes: NodeTypes = {
   geo: NetworkNode,
   gnd: NetworkNode,
   haps: NetworkNode,
-  cluster: ClusterNode,
 }
 
 export default function Canvas() {
@@ -48,77 +46,6 @@ export default function Canvas() {
   const { nodes, edges, addingType } = useAppSelector(state => state.network)
   const reactFlow = useReactFlow()
   const [linkSource, setLinkSource] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
-
-  const groups = useMemo(() => {
-    const map: Record<string, Node[]> = {}
-    for (const n of nodes) {
-      const lat = (n.data as any)?.lat
-      const lon = (n.data as any)?.lon
-      if (lat == null || lon == null) continue
-      const key = coordKey(lat, lon)
-      if (!map[key]) map[key] = []
-      map[key].push(n)
-    }
-    return map
-  }, [nodes])
-
-  const collapsed = useMemo(
-    () =>
-      Object.entries(groups).filter(
-        ([key, list]) => list.length > 1 && !expanded.has(key)
-      ),
-    [groups, expanded]
-  )
-
-  const hiddenIds = useMemo(
-    () => new Set(collapsed.flatMap(([, list]) => list.map(n => n.id))),
-    [collapsed]
-  )
-
-  const clusterNodes = useMemo(
-    () =>
-      collapsed.map(([key, list]) => ({
-        id: `cluster-${key}`,
-        type: 'cluster',
-        position: list[0].position,
-        data: { count: list.length, key },
-      } as Node)),
-    [collapsed]
-  )
-
-  const displayNodes = useMemo(
-    () => nodes.filter(n => !hiddenIds.has(n.id)).concat(clusterNodes),
-    [nodes, hiddenIds, clusterNodes]
-  )
-
-  const displayEdges = useMemo(
-    () =>
-      edges.filter(
-        e => !hiddenIds.has(e.source) && !hiddenIds.has(e.target)
-      ) as RFEdge[],
-    [edges, hiddenIds]
-  )
-
-  const selectedId = useAppSelector(state => state.network.selectedId)
-
-  useEffect(() => {
-    setExpanded(prev => {
-      const next = new Set(prev)
-      for (const key of Array.from(prev)) {
-        const list = groups[key]
-        if (!list || list.length <= 1) {
-          next.delete(key)
-        } else if (!selectedId || !list.some(n => n.id === selectedId)) {
-          const same = list.every(
-            n => coordKey((n.data as any)?.lat, (n.data as any)?.lon) === key
-          )
-          if (same) next.delete(key)
-        }
-      }
-      return next
-    })
-  }, [groups, selectedId])
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -206,17 +133,13 @@ export default function Canvas() {
     >
       <ReactFlow
         style={{ width: 360 * SCALE, height: 180 * SCALE }}
-        nodes={displayNodes}
-        edges={displayEdges}
+        nodes={nodes}
+        edges={edges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={(_, node) => {
-          if (node.type === 'cluster') {
-            setExpanded(prev => new Set(prev).add((node.data as any).key))
-            return
-          }
           if (addingType === 'delete') {
             dispatch(removeElement(node.id))
             toast.success('Удалено')
