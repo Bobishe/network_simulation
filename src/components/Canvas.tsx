@@ -29,6 +29,7 @@ import {
   SCALE,
   updateEdgesDistances,
 } from '../utils/geo'
+import { ALTITUDE_RANGES } from '../utils/altitudes'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
@@ -100,7 +101,11 @@ export default function Canvas() {
       })
       const id = `${type}-${Date.now()}`
       const { lat, lon } = posToLatLon(position)
-      dispatch(addNode({ id, type, position, data: { label: id, lat, lon } }))
+      const data: any = { label: id, lat, lon }
+      if (ALTITUDE_RANGES[type]) {
+        data.altitude = ALTITUDE_RANGES[type].min
+      }
+      dispatch(addNode({ id, type, position, data }))
       dispatch(setAddingType(null))
       toast.success('Узел добавлен')
     },

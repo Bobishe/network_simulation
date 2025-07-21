@@ -10,6 +10,7 @@ import {
   setElements,
 } from '../features/network/networkSlice'
 import { latLonToPos, updateEdgesDistances } from '../utils/geo'
+import { ALTITUDE_RANGES } from '../utils/altitudes'
 import toast from 'react-hot-toast'
 
 const typeNames: Record<string, string> = {
@@ -69,7 +70,9 @@ export default function PropertiesPanel() {
       lat: node.data?.lat ?? 0,
       lon: node.data?.lon ?? 0,
     }
-    if (isSatellite) initialValues.altitude = node.data?.altitude || ''
+    if (isSatellite)
+      initialValues.altitude =
+        node.data?.altitude ?? ALTITUDE_RANGES[node.type || '']?.min ?? ''
     if (isGround) initialValues.location = node.data?.location || ''
 
     const schemaShape: any = {
@@ -77,7 +80,17 @@ export default function PropertiesPanel() {
       lat: Yup.number().min(0).max(180).required(),
       lon: Yup.number().min(0).max(360).required(),
     }
-    if (isSatellite) schemaShape.altitude = Yup.number().required()
+    if (isSatellite) {
+      const range = ALTITUDE_RANGES[node.type || '']
+      if (range) {
+        schemaShape.altitude = Yup.number()
+          .min(range.min)
+          .max(range.max)
+          .required()
+      } else {
+        schemaShape.altitude = Yup.number().required()
+      }
+    }
     if (isGround) schemaShape.location = Yup.string().required()
 
     return (
