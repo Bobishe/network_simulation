@@ -10,8 +10,9 @@ import ReactFlow, {
   applyEdgeChanges,
   useReactFlow,
 } from 'reactflow'
-import type { NodeTypes } from 'reactflow'
+import type { NodeTypes, Node } from 'reactflow'
 import NetworkNode from './NetworkNode'
+import GroupedNodesOverlay from './GroupedNodesOverlay'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
   addNode,
@@ -30,7 +31,7 @@ import {
   updateEdgesDistances,
 } from '../utils/geo'
 import { ALTITUDE_RANGES } from '../utils/altitudes'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 
 const nodeTypes: NodeTypes = {
@@ -46,6 +47,30 @@ export default function Canvas() {
   const { nodes, edges, addingType } = useAppSelector(state => state.network)
   const reactFlow = useReactFlow()
   const [linkSource, setLinkSource] = useState<string | null>(null)
+
+  const grouped = useMemo(() => {
+    const map: Record<string, Node[]> = {}
+    for (const n of nodes) {
+      if (n.data && 'lat' in n.data && 'lon' in n.data) {
+        const key = `${n.data.lat}-${n.data.lon}`
+        if (!map[key]) map[key] = []
+        map[key].push(n)
+      }
+    }
+    return Object.values(map).filter(g => g.length > 1)
+  }, [nodes])
+
+  const hiddenIds = useMemo(() => new Set(grouped.flatMap(g => g.map(n => n.id))), [grouped])
+
+  const displayNodes = useMemo(
+    () =>
+      nodes.map(n =>
+        hiddenIds.has(n.id)
+          ? { ...n, style: { ...(n.style || {}), opacity: 0 } }
+          : n
+      ),
+    [nodes, hiddenIds]
+  )
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -133,7 +158,7 @@ export default function Canvas() {
     >
       <ReactFlow
         style={{ width: 360 * SCALE, height: 180 * SCALE }}
-        nodes={nodes}
+        nodes={displayNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
@@ -194,6 +219,9 @@ export default function Canvas() {
         <Background size={2} color="#aaa" />
         <Controls />
         <MiniMap />
+        {grouped.map(g => (
+          <GroupedNodesOverlay key={g.map(n => n.id).join('-')} nodes={g} />
+        ))}
       </ReactFlow>
     </div>
   )
