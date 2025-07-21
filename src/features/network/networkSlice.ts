@@ -4,10 +4,13 @@ import { NetworkState, RFNodeEx } from './types'
 
 export function groupNodes(nodes: RFNodeEx[]): RFNodeEx[] {
   const map = new Map<string, RFNodeEx[]>()
-  nodes.forEach(n => {
-    const key = `${n.position.x}|${n.position.y}`
-    map.set(key, [...(map.get(key) ?? []), n])
-  })
+  nodes
+    // ignore previously generated cluster nodes to avoid recursive grouping
+    .filter(n => n.type !== 'cluster')
+    .forEach(n => {
+      const key = `${n.position.x}|${n.position.y}`
+      map.set(key, [...(map.get(key) ?? []), n])
+    })
 
   const result: RFNodeEx[] = []
   for (const [key, group] of map) {
