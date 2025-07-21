@@ -7,11 +7,11 @@ import {
 } from "@heroicons/react/24/solid";
 
 const items = [
-  { type: "leo", icon: CubeIcon, label: "LEO" },
-  { type: "meo", icon: CubeTransparentIcon, label: "MEO" },
-  { type: "geo", icon: CubeIcon, label: "GEO", ring: true },
-  { type: "gnd", icon: HomeModernIcon, label: "GND" },
-  { type: "link", icon: ArrowRightIcon, label: "LINK" },
+  { type: "leo", icon: CubeIcon, label: "Низкая орбита" },
+  { type: "meo", icon: CubeTransparentIcon, label: "Средняя орбита" },
+  { type: "geo", icon: CubeIcon, label: "Геостационарная орбита", ring: true },
+  { type: "gnd", icon: HomeModernIcon, label: "Наземная станция" },
+  { type: "link", icon: ArrowRightIcon, label: "Связь" },
 ];
 
 export default function PaletteBar() {

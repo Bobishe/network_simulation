@@ -21,12 +21,12 @@ export default function TopBar() {
       <button
         type="button"
         onClick={handleDownload}
-        title="Download topology"
+        title="Скачать топологию"
         className="flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200"
       >
         <ArrowDownTrayIcon className="w-5 h-5" />
       </button>
-      <PaletteButton icon={TrashIcon} label="DEL" type="delete" />
+      <PaletteButton icon={TrashIcon} label="Удалить" type="delete" />
     </div>
   )
 }
