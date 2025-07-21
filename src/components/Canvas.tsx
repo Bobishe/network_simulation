@@ -28,6 +28,7 @@ import {
   distanceKm,
   SCALE,
   updateEdgesDistances,
+  coordKey,
 } from '../utils/geo'
 import { ALTITUDE_RANGES } from '../utils/altitudes'
 import { useCallback, useEffect, useState, useMemo } from 'react'
@@ -55,7 +56,7 @@ export default function Canvas() {
       const lat = (n.data as any)?.lat
       const lon = (n.data as any)?.lon
       if (lat == null || lon == null) continue
-      const key = `${lat}-${lon}`
+      const key = coordKey(lat, lon)
       if (!map[key]) map[key] = []
       map[key].push(n)
     }
@@ -110,7 +111,7 @@ export default function Canvas() {
           next.delete(key)
         } else if (!selectedId || !list.some(n => n.id === selectedId)) {
           const same = list.every(
-            n => `${(n.data as any)?.lat}-${(n.data as any)?.lon}` === key
+            n => coordKey((n.data as any)?.lat, (n.data as any)?.lon) === key
           )
           if (same) next.delete(key)
         }
