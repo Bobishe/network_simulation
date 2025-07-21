@@ -9,11 +9,9 @@ import ReactFlow, {
   applyNodeChanges,
   applyEdgeChanges,
   useReactFlow,
-  useStore,
 } from 'reactflow'
-import type { NodeTypes, Node } from 'reactflow'
+import type { NodeTypes } from 'reactflow'
 import NetworkNode from './NetworkNode'
-import ClusterNode from './ClusterNode'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
   addNode,
@@ -32,7 +30,7 @@ import {
   updateEdgesDistances,
 } from '../utils/geo'
 import { ALTITUDE_RANGES } from '../utils/altitudes'
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
 const nodeTypes: NodeTypes = {
@@ -41,44 +39,13 @@ const nodeTypes: NodeTypes = {
   geo: NetworkNode,
   gnd: NetworkNode,
   haps: NetworkNode,
-  cluster: ClusterNode,
 }
 
 export default function Canvas() {
   const dispatch = useAppDispatch()
   const { nodes, edges, addingType } = useAppSelector(state => state.network)
   const reactFlow = useReactFlow()
-  const transform = useStore(state => state.transform)
   const [linkSource, setLinkSource] = useState<string | null>(null)
-  const [clusterInfo, setClusterInfo] = useState<{ position: { x: number; y: number }; nodes: Node[] } | null>(null)
-
-  const displayNodes = useMemo(() => {
-    const groups: Record<string, Node[]> = {}
-    nodes.forEach(n => {
-      const key = `${n.data?.lat ?? 0}-${n.data?.lon ?? 0}`
-      if (!groups[key]) groups[key] = []
-      groups[key].push(n)
-    })
-    const result: Node[] = []
-    Object.entries(groups).forEach(([key, group]) => {
-      if (group.length === 1) {
-        result.push(group[0])
-      } else {
-        group.forEach(n =>
-          result.push({ ...n, style: { ...(n.style || {}), display: 'none' } })
-        )
-        result.push({
-          id: `cluster-${key}`,
-          type: 'cluster',
-          position: group[0].position,
-          data: { nodes: group, count: group.length },
-          draggable: false,
-          selectable: false,
-        })
-      }
-    })
-    return result
-  }, [nodes])
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -86,14 +53,7 @@ export default function Canvas() {
       const tgt = nodes.find(n => n.id === params.target)
       let distance = 0
       if (src?.data && tgt?.data) {
-        distance = distanceKm(
-          src.data.lat,
-          src.data.lon,
-          tgt.data.lat,
-          tgt.data.lon,
-          src.data.altitude || 0,
-          tgt.data.altitude || 0
-        )
+        distance = distanceKm(src.data.lat, src.data.lon, tgt.data.lat, tgt.data.lon)
       }
       dispatch(
         addEdge({
@@ -165,14 +125,6 @@ export default function Canvas() {
     }
   }, [addingType, linkSource, nodes, dispatch])
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setClusterInfo(null)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [])
-
   return (
     <div
       className={`w-full h-full map-bg flex ${addingType ? 'cursor-crosshair' : ''}`}
@@ -181,7 +133,7 @@ export default function Canvas() {
     >
       <ReactFlow
         style={{ width: 360 * SCALE, height: 180 * SCALE }}
-        nodes={displayNodes}
+        nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
@@ -201,14 +153,7 @@ export default function Canvas() {
                 const tgt = nodes.find(n => n.id === node.id)
                 let distance = 0
                 if (src?.data && tgt?.data) {
-                  distance = distanceKm(
-                    src.data.lat,
-                    src.data.lon,
-                    tgt.data.lat,
-                    tgt.data.lon,
-                    src.data.altitude || 0,
-                    tgt.data.altitude || 0
-                  )
+                  distance = distanceKm(src.data.lat, src.data.lon, tgt.data.lat, tgt.data.lon)
                 }
                 const id = `e-${linkSource}-${node.id}-${Date.now()}`
                 dispatch(
@@ -228,8 +173,6 @@ export default function Canvas() {
               dispatch(setAddingType(null))
               toast.success('Связь создана')
             }
-          } else if (node.type === 'cluster') {
-            setClusterInfo({ position: node.position, nodes: node.data.nodes })
           } else {
             dispatch(select(node.id))
           }
@@ -252,34 +195,6 @@ export default function Canvas() {
         <Controls />
         <MiniMap />
       </ReactFlow>
-      {clusterInfo && (
-        <div
-          className="absolute inset-0 z-10"
-          onClick={() => setClusterInfo(null)}
-        >
-          <div
-            className="absolute bg-white border rounded shadow text-xs"
-            style={{
-              left: clusterInfo.position.x * transform[2] + transform[0],
-              top: clusterInfo.position.y * transform[2] + transform[1],
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            {clusterInfo.nodes.map(n => (
-              <div
-                key={n.id}
-                className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
-                onClick={() => {
-                  dispatch(select(n.id))
-                  setClusterInfo(null)
-                }}
-              >
-                {n.data?.label || n.id}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

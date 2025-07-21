@@ -30,31 +30,21 @@ export function distanceKm(
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number,
-  alt1 = 0,
-  alt2 = 0
+  lon2: number
 ) {
   const lat1r = ((lat1 - 90) * Math.PI) / 180
   const lon1r = ((lon1 - 180) * Math.PI) / 180
   const lat2r = ((lat2 - 90) * Math.PI) / 180
   const lon2r = ((lon2 - 180) * Math.PI) / 180
 
-  const r1 = EARTH_RADIUS_KM + alt1
-  const r2 = EARTH_RADIUS_KM + alt2
+  const dLat = lat2r - lat1r
+  const dLon = lon2r - lon1r
 
-  const x1 = r1 * Math.cos(lat1r) * Math.cos(lon1r)
-  const y1 = r1 * Math.cos(lat1r) * Math.sin(lon1r)
-  const z1 = r1 * Math.sin(lat1r)
-
-  const x2 = r2 * Math.cos(lat2r) * Math.cos(lon2r)
-  const y2 = r2 * Math.cos(lat2r) * Math.sin(lon2r)
-  const z2 = r2 * Math.sin(lat2r)
-
-  const dx = x2 - x1
-  const dy = y2 - y1
-  const dz = z2 - z1
-
-  return Math.sqrt(dx * dx + dy * dy + dz * dz)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1r) * Math.cos(lat2r) * Math.sin(dLon / 2) ** 2
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return EARTH_RADIUS_KM * c
 }
 
 import type { Node, Edge } from 'reactflow'
@@ -71,9 +61,7 @@ export function updateEdgesDistances(nodes: Node[], edges: Edge[]): Edge[] {
         src.data.lat,
         src.data.lon,
         tgt.data.lat,
-        tgt.data.lon,
-        src.data.altitude || 0,
-        tgt.data.altitude || 0
+        tgt.data.lon
       )
       return {
         ...e,
