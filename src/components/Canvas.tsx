@@ -37,6 +37,7 @@ const nodeTypes: NodeTypes = {
   meo: NetworkNode,
   geo: NetworkNode,
   gnd: NetworkNode,
+  haps: NetworkNode,
 }
 
 export default function Canvas() {

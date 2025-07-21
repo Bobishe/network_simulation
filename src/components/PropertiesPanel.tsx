@@ -17,6 +17,7 @@ const typeNames: Record<string, string> = {
   meo: 'Средняя орбита',
   geo: 'Геостационарная орбита',
   gnd: 'Наземная станция',
+  haps: 'Высотная платформа',
 }
 
 function NodePositionUpdater({ node }: { node: Node }) {
@@ -61,7 +62,7 @@ export default function PropertiesPanel() {
   if (!node && !edge) return null
 
   if (node) {
-    const isSatellite = ['leo', 'meo', 'geo'].includes(node.type || '')
+    const isSatellite = ['leo', 'meo', 'geo', 'haps'].includes(node.type || '')
     const isGround = node.type === 'gnd'
     const initialValues: any = {
       label: node.data?.label || '',

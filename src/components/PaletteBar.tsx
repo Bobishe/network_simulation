@@ -3,6 +3,7 @@ import {
   CubeIcon,
   CubeTransparentIcon,
   HomeModernIcon,
+  PaperAirplaneIcon,
   ArrowRightIcon,
 } from "@heroicons/react/24/solid";
 
@@ -11,6 +12,7 @@ const items = [
   { type: "meo", icon: CubeTransparentIcon, label: "Средняя орбита" },
   { type: "geo", icon: CubeIcon, label: "Геостационарная орбита", ring: true },
   { type: "gnd", icon: HomeModernIcon, label: "Наземная станция" },
+  { type: "haps", icon: PaperAirplaneIcon, label: "Высотная платформа" },
   { type: "link", icon: ArrowRightIcon, label: "Связь" },
 ];
 

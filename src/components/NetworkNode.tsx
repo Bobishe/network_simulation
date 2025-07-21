@@ -1,5 +1,10 @@
 import { NodeProps, useStore, Handle, Position } from 'reactflow'
-import { CubeIcon, CubeTransparentIcon, HomeModernIcon } from '@heroicons/react/24/solid'
+import {
+  CubeIcon,
+  CubeTransparentIcon,
+  HomeModernIcon,
+  PaperAirplaneIcon,
+} from '@heroicons/react/24/solid'
 import classNames from 'classnames'
 
 const typeIcons: Record<string, React.ComponentType<any>> = {
@@ -7,6 +12,7 @@ const typeIcons: Record<string, React.ComponentType<any>> = {
   meo: CubeTransparentIcon,
   geo: CubeIcon,
   gnd: HomeModernIcon,
+  haps: PaperAirplaneIcon,
 }
 
 export default function NetworkNode({ data, type, selected, className }: NodeProps<any>) {
