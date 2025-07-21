@@ -20,6 +20,14 @@ export function posToLatLon(pos: { x: number; y: number }) {
   return { lat: lat + 90, lon: lon + 180 }
 }
 
+/**
+ * Returns a string key for grouping nodes by coordinates.
+ * Values are rounded to a fixed precision to avoid floating point issues.
+ */
+export function coordKey(lat: number, lon: number, precision = 6): string {
+  return `${lat.toFixed(precision)}-${lon.toFixed(precision)}`
+}
+
 export const EARTH_RADIUS_KM = 6371
 
 /**
