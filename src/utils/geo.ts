@@ -22,21 +22,6 @@ export function posToLatLon(pos: { x: number; y: number }) {
 
 export const EARTH_RADIUS_KM = 6371
 
-export const OVERLAP_OFFSET = 20
-
-export function positionWithOffset(
-  lat: number,
-  lon: number,
-  nodes: Node[],
-  excludeId?: string
-) {
-  const base = latLonToPos(lat, lon)
-  const count = nodes.filter(
-    n => n.id !== excludeId && n.data?.lat === lat && n.data?.lon === lon
-  ).length
-  return { x: base.x + count * OVERLAP_OFFSET, y: base.y }
-}
-
 /**
  * Returns great-circle distance between two coordinates in kilometers.
  * Inputs are positive latitude `[0,180]` and longitude `[0,360]`.
@@ -62,24 +47,6 @@ export function distanceKm(
   return EARTH_RADIUS_KM * c
 }
 
-/**
- * Distance between two coordinates taking altitude into account when they
- * share the same lat/lon.
- */
-export function distanceBetweenCoords(
-  lat1: number,
-  lon1: number,
-  alt1: number | undefined,
-  lat2: number,
-  lon2: number,
-  alt2: number | undefined
-) {
-  if (lat1 === lat2 && lon1 === lon2) {
-    return Math.abs((alt1 ?? 0) - (alt2 ?? 0))
-  }
-  return distanceKm(lat1, lon1, lat2, lon2)
-}
-
 import type { Node, Edge } from 'reactflow'
 
 /**
@@ -90,13 +57,11 @@ export function updateEdgesDistances(nodes: Node[], edges: Edge[]): Edge[] {
     const src = nodes.find(n => n.id === e.source)
     const tgt = nodes.find(n => n.id === e.target)
     if (src?.data && tgt?.data) {
-      const distance = distanceBetweenCoords(
+      const distance = distanceKm(
         src.data.lat,
         src.data.lon,
-        src.data.altitude,
         tgt.data.lat,
-        tgt.data.lon,
-        tgt.data.altitude
+        tgt.data.lon
       )
       return {
         ...e,

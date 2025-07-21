@@ -9,7 +9,7 @@ import {
   select,
   setElements,
 } from '../features/network/networkSlice'
-import { positionWithOffset, updateEdgesDistances } from '../utils/geo'
+import { latLonToPos, updateEdgesDistances } from '../utils/geo'
 import { ALTITUDE_RANGES } from '../utils/altitudes'
 import toast from 'react-hot-toast'
 
@@ -30,29 +30,25 @@ function NodePositionUpdater({ node }: { node: Node }) {
     if (!node) return
     const lat = Number(values.lat)
     const lon = Number(values.lon)
-    const altitude = values.altitude !== undefined ? Number(values.altitude) : undefined
     if (
       isNaN(lat) ||
       isNaN(lon) ||
-      (node.data?.lat === lat && node.data?.lon === lon && node.data?.altitude === altitude)
+      (node.data?.lat === lat && node.data?.lon === lon)
     )
       return
-    const position =
-      node.data?.lat === lat && node.data?.lon === lon
-        ? node.position
-        : positionWithOffset(lat, lon, nodes, node.id)
+    const position = latLonToPos(lat, lon)
     const updatedNodes = nodes.map(n =>
       n.id === node.id
         ? {
             ...node,
             position,
-            data: { ...node.data, ...values, lat, lon, altitude },
+            data: { ...node.data, ...values, lat, lon },
           }
         : n
     )
     const updatedEdges = updateEdgesDistances(updatedNodes, edges)
     dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
-  }, [values.lat, values.lon, values.altitude])
+  }, [values.lat, values.lon])
 
   return null
 }
@@ -107,10 +103,10 @@ export default function PropertiesPanel() {
           enableReinitialize
           validationSchema={Yup.object(schemaShape)}
           onSubmit={values => {
-            const lat = Number(values.lat)
-            const lon = Number(values.lon)
-            const altitude = values.altitude !== undefined ? Number(values.altitude) : undefined
-            const position = positionWithOffset(lat, lon, nodes, node.id)
+            const position = latLonToPos(
+              Number(values.lat),
+              Number(values.lon)
+            )
             const updatedNodes = nodes.map(n =>
               n.id === node.id
                 ? {
@@ -119,9 +115,8 @@ export default function PropertiesPanel() {
                     data: {
                       ...node.data,
                       ...values,
-                      lat,
-                      lon,
-                      altitude,
+                      lat: Number(values.lat),
+                      lon: Number(values.lon),
                     },
                   }
                 : n
