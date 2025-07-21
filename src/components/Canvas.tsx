@@ -10,8 +10,9 @@ import ReactFlow, {
   applyEdgeChanges,
   useReactFlow,
 } from 'reactflow'
-import type { NodeTypes } from 'reactflow'
+import type { NodeTypes, Node } from 'reactflow'
 import NetworkNode from './NetworkNode'
+import ClusterNode from './ClusterNode'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
   addNode,
@@ -30,7 +31,7 @@ import {
   updateEdgesDistances,
 } from '../utils/geo'
 import { ALTITUDE_RANGES } from '../utils/altitudes'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 
 const nodeTypes: NodeTypes = {
@@ -39,6 +40,7 @@ const nodeTypes: NodeTypes = {
   geo: NetworkNode,
   gnd: NetworkNode,
   haps: NetworkNode,
+  cluster: ClusterNode,
 }
 
 export default function Canvas() {
@@ -46,6 +48,38 @@ export default function Canvas() {
   const { nodes, edges, addingType } = useAppSelector(state => state.network)
   const reactFlow = useReactFlow()
   const [linkSource, setLinkSource] = useState<string | null>(null)
+  const [openCluster, setOpenCluster] = useState<
+    | { position: { x: number; y: number }; nodes: Node[] }
+    | null
+  >(null)
+
+  const displayNodes = useMemo(() => {
+    const groups = new Map<string, Node[]>()
+    nodes.forEach(n => {
+      const key = `${n.position.x}|${n.position.y}`
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(n)
+    })
+
+    const result: Node[] = []
+
+    groups.forEach((group, key) => {
+      if (group.length === 1) {
+        result.push({ ...group[0], hidden: false })
+      } else {
+        group.forEach(n => result.push({ ...n, hidden: true }))
+        result.push({
+          id: `cluster-${key}`,
+          type: 'cluster',
+          position: group[0].position,
+          data: { count: group.length, nodes: group },
+          draggable: false,
+        })
+      }
+    })
+
+    return result
+  }, [nodes])
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -125,21 +159,36 @@ export default function Canvas() {
     }
   }, [addingType, linkSource, nodes, dispatch])
 
+  useEffect(() => {
+    if (!openCluster) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenCluster(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [openCluster])
+
   return (
     <div
       className={`w-full h-full map-bg flex ${addingType ? 'cursor-crosshair' : ''}`}
       onDrop={onDrop}
       onDragOver={onDragOver}
+      onClick={() => setOpenCluster(null)}
     >
       <ReactFlow
         style={{ width: 360 * SCALE, height: 180 * SCALE }}
-        nodes={nodes}
+        nodes={displayNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={(_, node) => {
+          if (node.type === 'cluster') {
+            const pos = reactFlow.flowToScreenPosition(node.position)
+            setOpenCluster({ position: pos, nodes: node.data.nodes })
+            return
+          }
           if (addingType === 'delete') {
             dispatch(removeElement(node.id))
             toast.success('Удалено')
@@ -195,6 +244,26 @@ export default function Canvas() {
         <Controls />
         <MiniMap />
       </ReactFlow>
+      {openCluster && (
+        <div
+          className="absolute bg-white border rounded shadow text-xs"
+          style={{ left: openCluster.position.x, top: openCluster.position.y }}
+          onClick={e => e.stopPropagation()}
+        >
+          {openCluster.nodes.map(n => (
+            <div
+              key={n.id}
+              className="px-2 py-1 hover:bg-gray-100 cursor-pointer whitespace-nowrap"
+              onClick={() => {
+                dispatch(select(n.id))
+                setOpenCluster(null)
+              }}
+            >
+              {n.data?.label || n.id}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
