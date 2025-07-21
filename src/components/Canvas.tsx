@@ -23,11 +23,11 @@ import {
   setAddingType,
 } from '../features/network/networkSlice'
 import {
-  latLonToPos,
   posToLatLon,
-  distanceKm,
+  distanceBetweenCoords,
   SCALE,
   updateEdgesDistances,
+  positionWithOffset,
 } from '../utils/geo'
 import { ALTITUDE_RANGES } from '../utils/altitudes'
 import { useCallback, useEffect, useState } from 'react'
@@ -53,7 +53,14 @@ export default function Canvas() {
       const tgt = nodes.find(n => n.id === params.target)
       let distance = 0
       if (src?.data && tgt?.data) {
-        distance = distanceKm(src.data.lat, src.data.lon, tgt.data.lat, tgt.data.lon)
+        distance = distanceBetweenCoords(
+          src.data.lat,
+          src.data.lon,
+          src.data.altitude,
+          tgt.data.lat,
+          tgt.data.lon,
+          tgt.data.altitude
+        )
       }
       dispatch(
         addEdge({
@@ -74,7 +81,8 @@ export default function Canvas() {
       const changed = applyNodeChanges(changes, nodes)
       const updatedNodes = changed.map(n => {
         const { lat, lon } = posToLatLon(n.position)
-        return { ...n, data: { ...n.data, lat, lon } }
+        const position = positionWithOffset(lat, lon, nodes.filter(nd => nd.id !== n.id))
+        return { ...n, position, data: { ...n.data, lat, lon } }
       })
       const updatedEdges = updateEdgesDistances(updatedNodes, edges)
       dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
@@ -105,11 +113,12 @@ export default function Canvas() {
       if (ALTITUDE_RANGES[type]) {
         data.altitude = ALTITUDE_RANGES[type].min
       }
-      dispatch(addNode({ id, type, position, data }))
+      const adjustedPos = positionWithOffset(lat, lon, nodes)
+      dispatch(addNode({ id, type, position: adjustedPos, data }))
       dispatch(setAddingType(null))
       toast.success('Узел добавлен')
     },
-    [dispatch, reactFlow]
+    [dispatch, reactFlow, nodes]
   )
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -153,7 +162,14 @@ export default function Canvas() {
                 const tgt = nodes.find(n => n.id === node.id)
                 let distance = 0
                 if (src?.data && tgt?.data) {
-                  distance = distanceKm(src.data.lat, src.data.lon, tgt.data.lat, tgt.data.lon)
+                  distance = distanceBetweenCoords(
+                    src.data.lat,
+                    src.data.lon,
+                    src.data.altitude,
+                    tgt.data.lat,
+                    tgt.data.lon,
+                    tgt.data.altitude
+                  )
                 }
                 const id = `e-${linkSource}-${node.id}-${Date.now()}`
                 dispatch(
