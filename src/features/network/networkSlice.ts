@@ -1,6 +1,31 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { Node, Edge } from 'reactflow'
-import { NetworkState } from './types'
+import { Edge } from 'reactflow'
+import { NetworkState, RFNodeEx } from './types'
+
+export function groupNodes(nodes: RFNodeEx[]): RFNodeEx[] {
+  const map = new Map<string, RFNodeEx[]>()
+  nodes.forEach(n => {
+    const key = `${n.position.x}|${n.position.y}`
+    map.set(key, [...(map.get(key) ?? []), n])
+  })
+
+  const result: RFNodeEx[] = []
+  for (const [key, group] of map) {
+    if (group.length === 1) {
+      result.push({ ...group[0], hidden: false })
+    } else {
+      group.forEach(n => result.push({ ...n, hidden: true }))
+      const [x, y] = key.split('|').map(Number)
+      result.push({
+        id: `cluster-${key}`,
+        type: 'cluster',
+        position: { x, y },
+        data: { members: group.map(n => n.id), size: group.length },
+      } as RFNodeEx)
+    }
+  }
+  return result
+}
 
 const initialState: NetworkState = {
   nodes: [],
@@ -13,17 +38,20 @@ const networkSlice = createSlice({
   name: 'network',
   initialState,
   reducers: {
-    setElements(state, action: PayloadAction<{ nodes: Node[]; edges: Edge[] }>) {
+    setElements(
+      state,
+      action: PayloadAction<{ nodes: RFNodeEx[]; edges: Edge[] }>
+    ) {
       state.nodes = action.payload.nodes
       state.edges = action.payload.edges
     },
-    addNode(state, action: PayloadAction<Node>) {
+    addNode(state, action: PayloadAction<RFNodeEx>) {
       state.nodes.push(action.payload)
     },
     addEdge(state, action: PayloadAction<Edge>) {
       state.edges.push(action.payload)
     },
-    updateNode(state, action: PayloadAction<Node>) {
+    updateNode(state, action: PayloadAction<RFNodeEx>) {
       const idx = state.nodes.findIndex(n => n.id === action.payload.id)
       if (idx !== -1) state.nodes[idx] = action.payload
     },
