@@ -8,6 +8,7 @@ import {
   updateEdge,
   select,
   setElements,
+  groupNodes,
 } from '../features/network/networkSlice'
 import { latLonToPos, updateEdgesDistances } from '../utils/geo'
 import { ALTITUDE_RANGES } from '../utils/altitudes'
@@ -47,7 +48,7 @@ function NodePositionUpdater({ node }: { node: Node }) {
         : n
     )
     const updatedEdges = updateEdgesDistances(updatedNodes, edges)
-    dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
+    dispatch(setElements({ nodes: groupNodes(updatedNodes), edges: updatedEdges }))
   }, [values.lat, values.lon])
 
   return null
@@ -122,7 +123,9 @@ export default function PropertiesPanel() {
                 : n
             )
             const updatedEdges = updateEdgesDistances(updatedNodes, edges)
-            dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
+            dispatch(
+              setElements({ nodes: groupNodes(updatedNodes), edges: updatedEdges })
+            )
             dispatch(select(null))
             toast.success('Свойства сохранены')
           }}
