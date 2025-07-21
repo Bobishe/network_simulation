@@ -12,6 +12,13 @@ import {
 import { latLonToPos, updateEdgesDistances } from '../utils/geo'
 import toast from 'react-hot-toast'
 
+const typeNames: Record<string, string> = {
+  leo: 'Низкая орбита',
+  meo: 'Средняя орбита',
+  geo: 'Геостационарная орбита',
+  gnd: 'Наземная станция',
+}
+
 function NodePositionUpdater({ node }: { node: Node }) {
   const { values } = useFormikContext<any>()
   const dispatch = useAppDispatch()
@@ -75,7 +82,7 @@ export default function PropertiesPanel() {
     return (
       <div className="bg-white border-l px-4 py-6 overflow-y-auto" data-testid="properties-panel">
         <div className="font-semibold mb-4">
-          {node.type} • {node.id}
+          {typeNames[node.type || '']} • {node.id}
         </div>
         <Formik
           initialValues={initialValues}
@@ -109,27 +116,27 @@ export default function PropertiesPanel() {
           {() => (
             <Form className="flex flex-col gap-2">
               <NodePositionUpdater node={node} />
-              <label className="text-sm">Label</label>
+              <label className="text-sm">Метка</label>
               <Field name="label" className="border rounded p-1" />
-              <label className="text-sm">Latitude</label>
+              <label className="text-sm">Широта</label>
               <Field name="lat" type="number" className="border rounded p-1" />
-              <label className="text-sm">Longitude</label>
+              <label className="text-sm">Долгота</label>
               <Field name="lon" type="number" className="border rounded p-1" />
               {isSatellite && (
                 <>
-                  <label className="text-sm">Altitude</label>
+                  <label className="text-sm">Высота</label>
                   <Field name="altitude" type="number" className="border rounded p-1" />
                 </>
               )}
               {isGround && (
                 <>
-                  <label className="text-sm">Location</label>
+                  <label className="text-sm">Местоположение</label>
                   <Field name="location" className="border rounded p-1" />
                 </>
               )}
               <div className="flex justify-end gap-2 mt-4">
-                <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded">Save</button>
-                <button type="button" onClick={() => dispatch(select(null))} className="px-3 py-1 border rounded">Close</button>
+                <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded">Сохранить</button>
+                <button type="button" onClick={() => dispatch(select(null))} className="px-3 py-1 border rounded">Закрыть</button>
               </div>
             </Form>
           )}
@@ -146,7 +153,7 @@ export default function PropertiesPanel() {
     }
     return (
       <div className="bg-white border-l px-4 py-6 overflow-y-auto" data-testid="properties-panel">
-        <div className="font-semibold mb-4">LINK • {edge.id}</div>
+        <div className="font-semibold mb-4">СВЯЗЬ • {edge.id}</div>
         <Formik
           initialValues={initialValues}
           enableReinitialize
@@ -169,15 +176,15 @@ export default function PropertiesPanel() {
         >
           {() => (
             <Form className="flex flex-col gap-2">
-              <label className="text-sm">Label</label>
+              <label className="text-sm">Метка</label>
               <Field name="label" className="border rounded p-1" />
-              <label className="text-sm">Bandwidth (Mbps)</label>
+              <label className="text-sm">Пропускная способность (Мбит/с)</label>
               <Field name="bandwidth" type="number" className="border rounded p-1" />
-              <label className="text-sm">Latency (ms)</label>
+              <label className="text-sm">Задержка (мс)</label>
               <Field name="latency" type="number" className="border rounded p-1" />
               <div className="flex justify-end gap-2 mt-4">
-                <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded">Save</button>
-                <button type="button" onClick={() => dispatch(select(null))} className="px-3 py-1 border rounded">Close</button>
+                <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded">Сохранить</button>
+                <button type="button" onClick={() => dispatch(select(null))} className="px-3 py-1 border rounded">Закрыть</button>
               </div>
             </Form>
           )}
