@@ -56,7 +56,14 @@ export default function Canvas() {
       const tgt = nodes.find(n => n.id === params.target)
       let distance = 0
       if (src?.data && tgt?.data) {
-        distance = distanceKm(src.data.lat, src.data.lon, tgt.data.lat, tgt.data.lon)
+        distance = distanceKm(
+          src.data.lat,
+          src.data.lon,
+          tgt.data.lat,
+          tgt.data.lon,
+          src.data.altitude || 0,
+          tgt.data.altitude || 0
+        )
       }
       dispatch(
         addEdge({
@@ -157,7 +164,14 @@ export default function Canvas() {
                 const tgt = nodes.find(n => n.id === node.id)
                 let distance = 0
                 if (src?.data && tgt?.data) {
-                  distance = distanceKm(src.data.lat, src.data.lon, tgt.data.lat, tgt.data.lon)
+                  distance = distanceKm(
+                    src.data.lat,
+                    src.data.lon,
+                    tgt.data.lat,
+                    tgt.data.lon,
+                    src.data.altitude || 0,
+                    tgt.data.altitude || 0
+                  )
                 }
                 const id = `e-${linkSource}-${node.id}-${Date.now()}`
                 dispatch(
