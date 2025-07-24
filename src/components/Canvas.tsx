@@ -21,6 +21,8 @@ import {
   removeElement,
   select,
   setAddingType,
+  openNearby,
+  closeNearby,
 } from '../features/network/networkSlice'
 import {
   latLonToPos,
@@ -31,6 +33,7 @@ import {
 } from '../utils/geo'
 import { ALTITUDE_RANGES } from '../utils/altitudes'
 import { useCallback, useEffect, useState } from 'react'
+import NearbyPopup from './NearbyPopup'
 import toast from 'react-hot-toast'
 
 const nodeTypes: NodeTypes = {
@@ -43,7 +46,7 @@ const nodeTypes: NodeTypes = {
 
 export default function Canvas() {
   const dispatch = useAppDispatch()
-  const { nodes, edges, addingType } = useAppSelector(state => state.network)
+  const { nodes, edges, addingType, selectedId } = useAppSelector(state => state.network)
   const reactFlow = useReactFlow()
   const [linkSource, setLinkSource] = useState<string | null>(null)
 
@@ -139,10 +142,11 @@ export default function Canvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        onNodeClick={(_, node) => {
+        onNodeClick={(event, node) => {
           if (addingType === 'delete') {
             dispatch(removeElement(node.id))
             toast.success('Удалено')
+            dispatch(closeNearby())
           } else if (addingType === 'link') {
             if (!linkSource) {
               setLinkSource(node.id)
@@ -173,8 +177,37 @@ export default function Canvas() {
               dispatch(setAddingType(null))
               toast.success('Связь создана')
             }
+            dispatch(closeNearby())
           } else {
-            dispatch(select(node.id))
+            const lat = node.data?.lat
+            const lon = node.data?.lon
+            if (lat == null || lon == null) {
+              dispatch(select(node.id))
+              dispatch(closeNearby())
+              return
+            }
+            const nearbyIds = nodes
+              .filter(n => {
+                if (!n.data) return false
+                return (
+                  Math.abs(n.data.lat - lat) <= 0.5 &&
+                  Math.abs(n.data.lon - lon) <= 0.5
+                )
+              })
+              .map(n => n.id)
+            if (nearbyIds.length <= 1) {
+              dispatch(closeNearby())
+              dispatch(select(node.id))
+            } else {
+              const width = 240
+              const leftBoundary = 80
+              const rightBoundary = window.innerWidth - (selectedId ? 320 : 0)
+              let x = event.clientX
+              let y = event.clientY
+              if (x + width > rightBoundary) x = rightBoundary - width - 10
+              if (x < leftBoundary) x = leftBoundary + 10
+              dispatch(openNearby({ ids: nearbyIds, x, y }))
+            }
           }
         }}
         onEdgeClick={(_, edge) => {
@@ -184,6 +217,7 @@ export default function Canvas() {
           } else if (addingType !== 'link') {
             dispatch(select(edge.id))
           }
+          dispatch(closeNearby())
         }}
         fitView
         snapToGrid
@@ -195,6 +229,7 @@ export default function Canvas() {
         <Controls />
         <MiniMap />
       </ReactFlow>
+      <NearbyPopup />
     </div>
   )
 }

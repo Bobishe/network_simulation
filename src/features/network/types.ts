@@ -5,4 +5,5 @@ export interface NetworkState {
   edges: Edge[]
   selectedId: string | null
   addingType: string | null
+  nearby: { ids: string[]; x: number; y: number } | null
 }

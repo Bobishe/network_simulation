@@ -7,6 +7,7 @@ const initialState: NetworkState = {
   edges: [],
   selectedId: null,
   addingType: null,
+  nearby: null,
 }
 
 const networkSlice = createSlice({
@@ -34,12 +35,27 @@ const networkSlice = createSlice({
     removeElement(state, action: PayloadAction<string>) {
       state.nodes = state.nodes.filter(n => n.id !== action.payload)
       state.edges = state.edges.filter(e => e.id !== action.payload && e.source !== action.payload && e.target !== action.payload)
+      if (state.nearby && state.nearby.ids.includes(action.payload)) {
+        state.nearby = null
+      }
     },
     select(state, action: PayloadAction<string | null>) {
       state.selectedId = action.payload
     },
     setAddingType(state, action: PayloadAction<string | null>) {
       state.addingType = action.payload
+      if (action.payload !== null) {
+        state.nearby = null
+      }
+    },
+    openNearby(
+      state,
+      action: PayloadAction<{ ids: string[]; x: number; y: number }>
+    ) {
+      state.nearby = action.payload
+    },
+    closeNearby(state) {
+      state.nearby = null
     },
   },
 })
@@ -53,5 +69,7 @@ export const {
   removeElement,
   select,
   setAddingType,
+  openNearby,
+  closeNearby,
 } = networkSlice.actions
 export default networkSlice.reducer
