@@ -12,7 +12,6 @@ import ReactFlow, {
 } from 'reactflow'
 import type { NodeTypes } from 'reactflow'
 import NetworkNode from './NetworkNode'
-import ClusterNode from './ClusterNode'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
   addNode,
@@ -22,7 +21,6 @@ import {
   removeElement,
   select,
   setAddingType,
-  groupNodes,
 } from '../features/network/networkSlice'
 import {
   latLonToPos,
@@ -36,7 +34,6 @@ import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
 const nodeTypes: NodeTypes = {
-  cluster: ClusterNode,
   leo: NetworkNode,
   meo: NetworkNode,
   geo: NetworkNode,
@@ -49,21 +46,6 @@ export default function Canvas() {
   const { nodes, edges, addingType } = useAppSelector(state => state.network)
   const reactFlow = useReactFlow()
   const [linkSource, setLinkSource] = useState<string | null>(null)
-
-  const expandCluster = useCallback(
-    (clusterId: string) => {
-      const cluster = nodes.find(n => n.id === clusterId)
-      if (!cluster) return
-      const memberIds: string[] = cluster.data?.members || []
-      const merged = nodes
-        .filter(n => n.id !== clusterId)
-        .map(n =>
-          memberIds.includes(n.id) ? { ...n, hidden: false } : n
-        )
-      dispatch(setElements({ nodes: groupNodes(merged), edges }))
-    },
-    [dispatch, nodes, edges]
-  )
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -95,9 +77,7 @@ export default function Canvas() {
         return { ...n, data: { ...n.data, lat, lon } }
       })
       const updatedEdges = updateEdgesDistances(updatedNodes, edges)
-      dispatch(
-        setElements({ nodes: groupNodes(updatedNodes), edges: updatedEdges })
-      )
+      dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
     },
     [dispatch, nodes, edges]
   )
@@ -105,7 +85,7 @@ export default function Canvas() {
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
       const updatedEdges = applyEdgeChanges(changes, edges)
-      dispatch(setElements({ nodes: groupNodes(nodes), edges: updatedEdges }))
+      dispatch(setElements({ nodes, edges: updatedEdges }))
     },
     [dispatch, nodes, edges]
   )
@@ -153,17 +133,13 @@ export default function Canvas() {
     >
       <ReactFlow
         style={{ width: 360 * SCALE, height: 180 * SCALE }}
-        nodes={nodes.filter(n => !n.hidden)}
+        nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={(_, node) => {
-          if (node.type === 'cluster') {
-            expandCluster(node.id)
-            return
-          }
           if (addingType === 'delete') {
             dispatch(removeElement(node.id))
             toast.success('Удалено')
