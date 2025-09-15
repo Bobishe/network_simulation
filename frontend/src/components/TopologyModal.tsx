@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAppDispatch } from '../hooks'
-import { setElements } from '../features/network/networkSlice'
+import { setTopology } from '../features/network/networkSlice'
 import type { Node, Edge } from 'reactflow'
 
 interface Topology {
@@ -27,7 +27,9 @@ export default function TopologyModal({ onClose }: Props) {
   }, [])
 
   const handleSelect = (topology: Topology) => {
-    dispatch(setElements(topology.data))
+    dispatch(
+      setTopology({ id: topology.id, nodes: topology.data.nodes, edges: topology.data.edges })
+    )
     onClose()
   }
 
@@ -39,6 +41,10 @@ export default function TopologyModal({ onClose }: Props) {
       body: JSON.stringify({ name, data: { nodes: [], edges: [] } }),
     })
     if (res.ok) {
+      const topology: Topology = await res.json()
+      dispatch(
+        setTopology({ id: topology.id, nodes: topology.data.nodes, edges: topology.data.edges })
+      )
       onClose()
     }
   }
