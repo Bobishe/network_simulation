@@ -1,4 +1,4 @@
-import { Edge, Node, Port, PortDir, Topology } from './types'
+import { Edge, Node, Port, PortDir, Topology, PortParams } from './types'
 import { isConnectionAllowed } from './rules'
 
 const generateId = (): string =>
@@ -10,7 +10,7 @@ const getNextPortIdx = (node: Node, dir: PortDir): number => {
   return maxIdx + 1
 }
 
-const isPortFree = (topology: Topology, portId: string): boolean =>
+export const isPortFree = (topology: Topology, portId: string): boolean =>
   !topology.edges.some(
     (e) => e.from.portId === portId || e.to.portId === portId
   )
@@ -31,6 +31,11 @@ const updatePort = (
   return node
 }
 
+const defaultParams: Record<PortDir, PortParams> = {
+  in: { q: 20, mu: 10 },
+  out: { q: 20, mu: 9 },
+}
+
 const addPort = (
   node: Node,
   dir: PortDir,
@@ -43,7 +48,7 @@ const addPort = (
     dir,
     idx,
     label: `${dir}-${idx}`,
-    params: { q: 0, mu: 0 },
+    params: { ...defaultParams[dir] },
     persistent: false,
     locked: false,
     ...partial,
@@ -72,6 +77,9 @@ export const onConnect = (
   if (!sourceNode || !targetNode) {
     throw new Error('Unknown node')
   }
+  if (sourceNodeId === targetNodeId) {
+    throw new Error('Self loop not allowed')
+  }
 
   let updatedSource = sourceNode
   let sourcePort: Port
@@ -79,6 +87,9 @@ export const onConnect = (
     const port = sourceNode.outPorts.find((p) => p.id === sourcePortId)
     if (!port) throw new Error('Source port not found')
     if (port.dir !== 'out') throw new Error('Source port must be out')
+    if (!isPortFree(topology, port.id)) {
+      throw new Error('Source port busy')
+    }
     sourcePort = port
   } else {
     const result = addPort(sourceNode, 'out')
@@ -92,6 +103,9 @@ export const onConnect = (
     const port = targetNode.inPorts.find((p) => p.id === targetPortId)
     if (!port) throw new Error('Target port not found')
     if (port.dir !== 'in') throw new Error('Target port must be in')
+     if (!isPortFree(topology, port.id)) {
+       throw new Error('Target port busy')
+     }
     targetPort = port
   } else {
     const freePorts = targetNode.inPorts

@@ -5,6 +5,8 @@ import {
   Topology,
   onConnect,
   removeEdge,
+  exportTopology,
+  importTopology,
 } from './index'
 
 const makeNode = (id: string, type: NodeType): Node => ({
@@ -69,6 +71,31 @@ describe('connection matrix', () => {
   })
 })
 
+describe('port policies and self-loop', () => {
+  it('blocks connection to occupied port', () => {
+    let topo = emptyTopology([
+      makeNode('a', NodeType.SC),
+      makeNode('b', NodeType.ES),
+    ])
+    topo = onConnect(topo, { sourceNodeId: 'a', targetNodeId: 'b' })
+    const targetPortId = topo.nodes.find((n) => n.id === 'b')!.inPorts[0].id
+    expect(() =>
+      onConnect(topo, {
+        sourceNodeId: 'a',
+        targetNodeId: 'b',
+        targetPortId,
+      })
+    ).toThrowError()
+  })
+
+  it('prevents self loop', () => {
+    const topo = emptyTopology([makeNode('a', NodeType.SC)])
+    expect(() =>
+      onConnect(topo, { sourceNodeId: 'a', targetNodeId: 'a' })
+    ).toThrowError()
+  })
+})
+
 describe('edge removal cleanup', () => {
   it('removes non persistent ports when edge deleted', () => {
     const a: Node = {
@@ -111,5 +138,18 @@ describe('edge removal cleanup', () => {
     expect(updated.edges).toHaveLength(0)
     expect(updated.nodes.find((n) => n.id === 'a')!.outPorts).toHaveLength(0)
     expect(updated.nodes.find((n) => n.id === 'b')!.inPorts).toHaveLength(0)
+  })
+})
+
+describe('import/export', () => {
+  it('restores topology from JSON', () => {
+    let topo = emptyTopology([
+      makeNode('a', NodeType.SC),
+      makeNode('b', NodeType.HAPS),
+    ])
+    topo = onConnect(topo, { sourceNodeId: 'a', targetNodeId: 'b' })
+    const json = exportTopology(topo)
+    const restored = importTopology(json)
+    expect(restored).toEqual(topo)
   })
 })
