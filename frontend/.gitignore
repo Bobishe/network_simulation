@@ -1,9 +1,9 @@
 # dependencies
-/node_modules
+node_modules
 
 # production build
-/build
-/dist
+build
+dist
 
 # misc
 .DS_Store
@@ -29,29 +29,24 @@ pnpm-debug.log*
 Thumbs.db
 
 # testing
-/coverage
+coverage
 
 # local tools
-/.parcel-cache
-/.eslintcache
+.parcel-cache
+.eslintcache
 
 # Storybook
 .out
 .storybook-out
 
 # Next.js (если используется)
-/.next
+.next
 out/
 
 # Mac M1 specific
 *.swp
 
 # Optional: lock files if you use one package manager only
-# Uncomment one of these if you want to ignore lockfiles for others
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
-
-# Python
-__pycache__/
-*.py[cod]
