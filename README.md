@@ -20,4 +20,4 @@ Ensure a PostgreSQL database is available and reachable via the `DATABASE_URL` e
 docker-compose up --build
 ```
 
-The frontend will be available at http://localhost:3000 and the backend at http://localhost:8000.
+The application is served through an Nginx reverse proxy at [http://localhost](http://localhost). All API requests are routed through `/api`, so the backend is reachable at [http://localhost/api](http://localhost/api) while the frontend is available at the root path.
