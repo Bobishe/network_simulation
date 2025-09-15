@@ -9,6 +9,18 @@ class TopologyCreate(BaseModel):
     data: Any
 
 
+class TopologyUpdate(BaseModel):
+    """Schema for updating an existing topology.
+
+    Only the `data` field is required. The `name` field is optional so that
+    clients can update the topology's structure without needing to resend the
+    name, which previously caused validation errors when omitted.
+    """
+
+    data: Any
+    name: str | None = None
+
+
 class Topology(BaseModel):
     id: int
     name: str
