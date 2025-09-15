@@ -1,0 +1,115 @@
+import { describe, it, expect } from 'vitest'
+import {
+  Node,
+  NodeType,
+  Topology,
+  onConnect,
+  removeEdge,
+} from './index'
+
+const makeNode = (id: string, type: NodeType): Node => ({
+  id,
+  type,
+  name: type + id,
+  position: { x: 0, y: 0 },
+  inPorts: [],
+  outPorts: [],
+})
+
+const emptyTopology = (nodes: Node[]): Topology => ({ nodes, edges: [] })
+
+describe('auto indexing and connection', () => {
+  it('creates ports automatically and keeps indices stable', () => {
+    const a = makeNode('a', NodeType.SC)
+    const b = makeNode('b', NodeType.HAPS)
+    let topo = emptyTopology([a, b])
+
+    topo = onConnect(topo, { sourceNodeId: 'a', targetNodeId: 'b' })
+    expect(topo.edges).toHaveLength(1)
+    const edge1 = topo.edges[0]
+    const sourcePort1 = topo.nodes.find((n) => n.id === 'a')!.outPorts[0]
+    const targetPort1 = topo.nodes.find((n) => n.id === 'b')!.inPorts[0]
+    expect(sourcePort1.idx).toBe(1)
+    expect(targetPort1.idx).toBe(1)
+
+    topo = onConnect(topo, { sourceNodeId: 'a', targetNodeId: 'b' })
+    expect(topo.edges).toHaveLength(2)
+    const sourcePort2 = topo.nodes.find((n) => n.id === 'a')!.outPorts[1]
+    const targetPort2 = topo.nodes.find((n) => n.id === 'b')!.inPorts[1]
+    expect(sourcePort2.idx).toBe(2)
+    expect(targetPort2.idx).toBe(2)
+
+    topo = removeEdge(topo, edge1.id)
+    const remainingPort = topo.nodes.find((n) => n.id === 'a')!.outPorts.find((p) => p.idx === 2)
+    expect(remainingPort).toBeDefined()
+  })
+})
+
+describe('connection matrix', () => {
+  it('allows ES -> SSOP and SSOP -> ES', () => {
+    let topo = emptyTopology([
+      makeNode('es', NodeType.ES),
+      makeNode('ss', NodeType.SSOP),
+    ])
+    topo = onConnect(topo, { sourceNodeId: 'es', targetNodeId: 'ss' })
+    expect(topo.edges).toHaveLength(1)
+
+    topo = onConnect(topo, { sourceNodeId: 'ss', targetNodeId: 'es' })
+    expect(topo.edges).toHaveLength(2)
+  })
+
+  it('forbids connection into SSOP from other types', () => {
+    const topo = emptyTopology([
+      makeNode('sc', NodeType.SC),
+      makeNode('ss', NodeType.SSOP),
+    ])
+    expect(() =>
+      onConnect(topo, { sourceNodeId: 'sc', targetNodeId: 'ss' })
+    ).toThrowError()
+  })
+})
+
+describe('edge removal cleanup', () => {
+  it('removes non persistent ports when edge deleted', () => {
+    const a: Node = {
+      ...makeNode('a', NodeType.SC),
+      outPorts: [
+        {
+          id: 'p1',
+          nodeId: 'a',
+          dir: 'out',
+          idx: 1,
+          label: 'p1',
+          params: { q: 0, mu: 0 },
+          persistent: false,
+          locked: false,
+        },
+      ],
+    }
+    const b: Node = {
+      ...makeNode('b', NodeType.ES),
+      inPorts: [
+        {
+          id: 'p2',
+          nodeId: 'b',
+          dir: 'in',
+          idx: 1,
+          label: 'p2',
+          params: { q: 0, mu: 0 },
+          persistent: false,
+          locked: false,
+        },
+      ],
+    }
+    const topo: Topology = {
+      nodes: [a, b],
+      edges: [
+        { id: 'e1', from: { nodeId: 'a', portId: 'p1' }, to: { nodeId: 'b', portId: 'p2' } },
+      ],
+    }
+    const updated = removeEdge(topo, 'e1')
+    expect(updated.edges).toHaveLength(0)
+    expect(updated.nodes.find((n) => n.id === 'a')!.outPorts).toHaveLength(0)
+    expect(updated.nodes.find((n) => n.id === 'b')!.inPorts).toHaveLength(0)
+  })
+})
