@@ -4,9 +4,12 @@ import Canvas from './components/Canvas'
 import PropertiesPanel from './components/PropertiesPanel'
 import { useAppSelector } from './hooks'
 import { Toaster } from 'react-hot-toast'
+import { useState } from 'react'
+import TopologyModal from './components/TopologyModal'
 
 export default function App() {
-  const selectedId = useAppSelector(state => state.network.selectedId)
+  const { selectedId, nodes, edges } = useAppSelector(state => state.network)
+  const [showModal, setShowModal] = useState(nodes.length === 0 && edges.length === 0)
 
   return (
     <>
@@ -24,6 +27,7 @@ export default function App() {
         </div>
         <Toaster position="top-right" />
       </div>
+      {showModal && <TopologyModal onClose={() => setShowModal(false)} />}
     </>
   )
 }

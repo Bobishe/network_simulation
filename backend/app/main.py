@@ -28,4 +28,4 @@ def create_topology(topology: schemas.TopologyCreate, db: Session = Depends(get_
 
 @app.get("/topologies", response_model=list[schemas.Topology])
 def list_topologies(db: Session = Depends(get_db)):
-    return db.query(models.Topology).order_by(models.Topology.created_at.desc()).all()
+    return db.query(models.Topology).order_by(models.Topology.updated_at.desc()).all()
