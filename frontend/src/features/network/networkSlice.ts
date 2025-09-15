@@ -5,6 +5,7 @@ import { NetworkState } from './types'
 const initialState: NetworkState = {
   nodes: [],
   edges: [],
+  topologyId: null,
   selectedId: null,
   addingType: null,
   nearby: null,
@@ -15,6 +16,14 @@ const networkSlice = createSlice({
   initialState,
   reducers: {
     setElements(state, action: PayloadAction<{ nodes: Node[]; edges: Edge[] }>) {
+      state.nodes = action.payload.nodes
+      state.edges = action.payload.edges
+    },
+    setTopology(
+      state,
+      action: PayloadAction<{ id: number; nodes: Node[]; edges: Edge[] }>
+    ) {
+      state.topologyId = action.payload.id
       state.nodes = action.payload.nodes
       state.edges = action.payload.edges
     },
@@ -62,6 +71,7 @@ const networkSlice = createSlice({
 
 export const {
   setElements,
+  setTopology,
   addNode,
   addEdge,
   updateNode,
