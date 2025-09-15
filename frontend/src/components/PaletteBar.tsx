@@ -1,19 +1,19 @@
 import PaletteButton from "./PaletteButton";
-import {
-  CubeIcon,
-  CubeTransparentIcon,
-  HomeModernIcon,
-  PaperAirplaneIcon,
-  ArrowRightIcon,
-} from "@heroicons/react/24/solid";
+import leoIcon from "../img/leo.png"
+import MeoIcon from "../img/meo.png"
+import GeoIcon from "../img/geo.png"
+import GndIcon from "../img/gnd.png"
+import HaspIcon from "../img/hasp.png"
+import LinkIcon from "../img/link.png"
+
 
 const items = [
-  { type: "leo", icon: CubeIcon, label: "Низкая орбита" },
-  { type: "meo", icon: CubeTransparentIcon, label: "Средняя орбита" },
-  { type: "geo", icon: CubeIcon, label: "Геостационарная орбита", ring: true },
-  { type: "gnd", icon: HomeModernIcon, label: "Наземная станция" },
-  { type: "haps", icon: PaperAirplaneIcon, label: "Высотная платформа" },
-  { type: "link", icon: ArrowRightIcon, label: "Связь" },
+  { type: "leo", icon: leoIcon, label: "Низкая орбита" },
+  { type: "meo", icon: MeoIcon, label: "Средняя орбита" },
+  { type: "geo", icon: GeoIcon, label: "Геостационарная орбита"},
+  { type: "gnd", icon: GndIcon, label: "Наземная станция" },
+  { type: "haps", icon: HaspIcon, label: "Высотная платформа" },
+  { type: "link", icon: LinkIcon, label: "Связь" },
 ];
 
 export default function PaletteBar() {
@@ -25,7 +25,6 @@ export default function PaletteBar() {
           icon={item.icon}
           label={item.label}
           type={item.type}
-          ring={"ring" in item ? item.ring : undefined}
         />
       ))}
     </div>
