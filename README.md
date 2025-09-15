@@ -1,35 +1,23 @@
 # Satellite Network Topology Builder (Prototype)
 
-This prototype uses **React 18**, **TypeScript 5** and **Vite**. It provides a simple interface with:
+This prototype uses **React 18**, **TypeScript 5** and **Vite** for the frontend and a **FastAPI** backend.
 
 - Palette bar with tool buttons, including a HAPS (High Altitude Platform Station) node
 - Graph canvas powered by `reactflow`
 - Properties panel with a Formik form
 - State management via Redux Toolkit
 
-All data is stored in the local Redux slice `network`.
+## Project Structure
 
-## Backend API
+- `frontend/` – React application
+- `backend/` – FastAPI service
 
-The `backend` directory contains a minimal **FastAPI** application that
-persists network topologies in a PostgreSQL 17 database. Each topology record
-includes a user supplied name, the JSON representation of the topology and the
-timestamp when it was created.
+## Running with Docker
 
-### Running
+Ensure a PostgreSQL database is available and reachable via the `DATABASE_URL` environment variable. Then build and start both services:
 
-1. Install dependencies:
+```bash
+docker-compose up --build
+```
 
-   ```bash
-   pip install -r backend/requirements.txt
-   ```
-
-2. Start the API (ensure the `DATABASE_URL` environment variable points to your
-   PostgreSQL instance):
-
-   ```bash
-   uvicorn backend.main:app --reload
-   ```
-
-3. Use `POST /topologies` to save a topology and `GET /topologies` to list all
-   saved entries.
+The frontend will be available at http://localhost:3000 and the backend at http://localhost:8000.
