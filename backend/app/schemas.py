@@ -14,6 +14,7 @@ class Topology(BaseModel):
     name: str
     data: Any
     created_at: datetime
+    updated_at: datetime
 
     class Config:
         orm_mode = True
