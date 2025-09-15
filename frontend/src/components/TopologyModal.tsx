@@ -20,7 +20,7 @@ export default function TopologyModal({ onClose }: Props) {
   const [name, setName] = useState('')
 
   useEffect(() => {
-    fetch('http://localhost:8000/topologies')
+    fetch('/api/topologies')
       .then(res => res.json())
       .then(data => setTopologies(data))
       .catch(() => setTopologies([]))
@@ -33,7 +33,7 @@ export default function TopologyModal({ onClose }: Props) {
 
   const handleCreate = async () => {
     if (!name.trim()) return
-    const res = await fetch('http://localhost:8000/topologies', {
+    const res = await fetch('/api/topologies', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, data: { nodes: [], edges: [] } }),
