@@ -2,6 +2,10 @@ import type { Edge, Node } from 'reactflow'
 
 export type InterfaceDirection = 'in' | 'out'
 
+export type InterfaceSpeedMode = 'rate' | 'time'
+
+export type InterfaceResourceType = 'FACILITY' | 'STORAGE'
+
 export interface NodeInterface {
   id: string
   name: string
@@ -10,6 +14,16 @@ export interface NodeInterface {
   connectedNodeId: string
   connectedNodeLabel: string
   description: string
+  idx?: number
+  queueCapacity?: number
+  speedMode?: InterfaceSpeedMode
+  serviceRate?: number
+  serviceTime?: number
+  resourceType?: InterfaceResourceType
+  resourceAmount?: number
+  label?: string
+  autoCleanup?: boolean
+  distribution?: string
 }
 
 export interface NodeData {
@@ -87,6 +101,7 @@ export const createInterface = (
   const count = interfaces.filter(iface => iface.direction === direction).length
   const baseLabel =
     direction === 'out' ? 'Исходящий интерфейс' : 'Входящий интерфейс'
+  const idx = count + 1
   return {
     id: createInterfaceId(),
     name: `${baseLabel} ${count + 1}`,
@@ -97,7 +112,80 @@ export const createInterface = (
       ? String(connectedNode.data.label)
       : connectedNode.id,
     description: '',
+    idx,
+    queueCapacity: 0,
+    speedMode: 'rate',
+    serviceRate: 1,
+    serviceTime: 1,
+    resourceType: 'FACILITY',
+    resourceAmount: 1,
+    label: '',
+    autoCleanup: false,
+    distribution: 'Exponential',
   }
+}
+
+const normalizeInterfaceValue = (
+  iface: NodeInterface,
+  counters: { in: number; out: number }
+): NodeInterface => {
+  const direction = iface.direction === 'out' ? 'out' : 'in'
+  counters[direction] += 1
+  const idx =
+    typeof iface.idx === 'number' && !Number.isNaN(iface.idx)
+      ? iface.idx
+      : counters[direction]
+  const hasServiceRate = typeof iface.serviceRate === 'number' && iface.serviceRate > 0
+  const hasServiceTime = typeof iface.serviceTime === 'number' && iface.serviceTime > 0
+  const inferredServiceRate = hasServiceRate
+    ? iface.serviceRate!
+    : hasServiceTime
+    ? 1 / (iface.serviceTime as number)
+    : 1
+  const inferredServiceTime = hasServiceTime
+    ? iface.serviceTime!
+    : hasServiceRate
+    ? 1 / (iface.serviceRate as number)
+    : 1
+  const speedMode: InterfaceSpeedMode = hasServiceTime && !hasServiceRate ? 'time' : iface.speedMode ?? 'rate'
+  const resourceType: InterfaceResourceType =
+    iface.resourceType === 'STORAGE' ? 'STORAGE' : 'FACILITY'
+  const resourceAmount =
+    resourceType === 'STORAGE'
+      ? Math.max(
+          1,
+          typeof iface.resourceAmount === 'number' && !Number.isNaN(iface.resourceAmount)
+            ? iface.resourceAmount
+            : 1
+        )
+      : 1
+
+  return {
+    ...iface,
+    idx,
+    queueCapacity:
+      typeof iface.queueCapacity === 'number' && iface.queueCapacity >= 0
+        ? Math.floor(iface.queueCapacity)
+        : 0,
+    speedMode,
+    serviceRate: inferredServiceRate,
+    serviceTime: inferredServiceTime,
+    resourceType,
+    resourceAmount,
+    label: iface.label ?? '',
+    autoCleanup: Boolean(iface.autoCleanup),
+    distribution: iface.distribution ?? 'Exponential',
+  }
+}
+
+export const normalizeNodeInterfaces = (
+  node: Node<NodeData>
+): Node<NodeData> => {
+  if (!node.data || !Array.isArray(node.data.interfaces)) return node
+  const interfaces = node.data.interfaces as NodeInterface[]
+  const counters = { in: 0, out: 0 }
+  const normalized = interfaces.map(iface => normalizeInterfaceValue(iface, counters))
+  return { ...node, data: { ...(node.data ?? {}), interfaces: normalized } }
 }
 
 export const ensureInterfacesForEdge = (

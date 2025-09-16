@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import type { Node, Edge } from 'reactflow'
 import {
   ensureAllEdgeInterfaces,
+  normalizeNodeInterfaces,
   parseInterfaceSelectionId,
   removeInterfacesByEdgeIds,
 } from '../../utils/interfaces'
@@ -46,7 +47,7 @@ const networkSlice = createSlice({
             ...iface,
           }))
         }
-        return { ...node, data }
+        return normalizeNodeInterfaces({ ...node, data })
       })
       state.nodes = ensureAllEdgeInterfaces(normalizedNodes, action.payload.edges)
       state.edges = action.payload.edges
