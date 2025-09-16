@@ -9,6 +9,7 @@ import ReactFlow, {
   applyNodeChanges,
   applyEdgeChanges,
   useReactFlow,
+  MarkerType,
 } from 'reactflow'
 import type { NodeTypes } from 'reactflow'
 import NetworkNode from './NetworkNode'
@@ -92,9 +93,13 @@ export default function Canvas() {
         style: { stroke: 'black' },
         data: { distance },
         label: `${Math.round(distance)} km`,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: 'black',
+        },
       }
 
-      const updatedSource = addInterfaceToNode(
+      const sourceWithInterface = addInterfaceToNode(
         sourceNode,
         createInterface({
           node: sourceNode,
@@ -103,6 +108,11 @@ export default function Canvas() {
           connectedNode: targetNode,
         })
       )
+
+      const updatedSource =
+        sourceNode.className === 'ring-2 ring-blue-500'
+          ? { ...sourceWithInterface, className: undefined }
+          : { ...sourceWithInterface, className: sourceNode.className }
 
       const updatedTarget = addInterfaceToNode(
         targetNode,
@@ -205,6 +215,9 @@ export default function Canvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        defaultEdgeOptions={{
+          markerEnd: { type: MarkerType.ArrowClosed, color: 'black' },
+        }}
         onNodeContextMenu={(event, node) => {
           event.preventDefault()
           const width = 160
@@ -230,9 +243,10 @@ export default function Canvas() {
             } else {
               if (linkSource !== node.id) {
                 createConnection(linkSource, node.id)
+              } else {
+                const srcNode = nodes.find(n => n.id === linkSource)
+                if (srcNode) dispatch(updateNode({ ...srcNode, className: undefined }))
               }
-              const srcNode = nodes.find(n => n.id === linkSource)
-              if (srcNode) dispatch(updateNode({ ...srcNode, className: undefined }))
               setLinkSource(null)
               dispatch(setAddingType(null))
               toast.success('Связь создана')
