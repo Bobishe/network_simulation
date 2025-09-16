@@ -147,13 +147,63 @@ export default function Canvas() {
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      const changed = applyNodeChanges(changes, nodes)
-      const updatedNodes = changed.map(n => {
-        const { lat, lon } = posToLatLon(n.position)
-        return { ...n, data: { ...n.data, lat, lon } }
+      if (!changes.length) return
+
+      const movedNodeIds = new Set(
+        changes.filter(change => change.type === 'position').map(change => change.id)
+      )
+
+      const previousNodes = new Map(nodes.map(node => [node.id, node]))
+      const nextNodes = applyNodeChanges(changes, nodes)
+
+      let nodesChanged = nextNodes.length !== nodes.length
+      let coordinatesChanged = false
+
+      const nodesWithCoords = nextNodes.map(node => {
+        const prevNode = previousNodes.get(node.id)
+
+        if (!nodesChanged && prevNode !== node) {
+          nodesChanged = true
+        }
+
+        if (!movedNodeIds.has(node.id)) {
+          return node
+        }
+
+        if (
+          prevNode &&
+          (prevNode.position.x !== node.position.x ||
+            prevNode.position.y !== node.position.y)
+        ) {
+          coordinatesChanged = true
+        }
+
+        const { lat, lon } = posToLatLon(node.position)
+        const prevLat = prevNode?.data?.lat
+        const prevLon = prevNode?.data?.lon
+        const currentLat = node.data?.lat
+        const currentLon = node.data?.lon
+
+        if (prevLat === lat && prevLon === lon && currentLat === lat && currentLon === lon) {
+          return node
+        }
+
+        coordinatesChanged = true
+        nodesChanged = true
+
+        return {
+          ...node,
+          data: { ...(node.data ?? {}), lat, lon },
+        }
       })
-      const updatedEdges = updateEdgesDistances(updatedNodes, edges)
-      dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
+
+      if (!nodesChanged && !coordinatesChanged) return
+
+      const updatedEdges = coordinatesChanged
+        ? updateEdgesDistances(nodesWithCoords, edges)
+        : edges
+
+      dispatch(setElements({ nodes: nodesWithCoords, edges: updatedEdges }))
     },
     [dispatch, nodes, edges]
   )
