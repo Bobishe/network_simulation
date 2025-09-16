@@ -15,7 +15,6 @@ import NetworkNode from './NetworkNode'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
   addNode,
-  addEdge,
   setElements,
   updateNode,
   removeElement,
@@ -23,6 +22,9 @@ import {
   setAddingType,
   openNearby,
   closeNearby,
+  openNodeMenu,
+  closeNodeMenu,
+  closeInterfaces,
 } from '../features/network/networkSlice'
 import {
   latLonToPos,
@@ -32,8 +34,15 @@ import {
   updateEdgesDistances,
 } from '../utils/geo'
 import { ALTITUDE_RANGES } from '../utils/altitudes'
+import {
+  addInterfaceToNode,
+  createInterface,
+  NodeData,
+} from '../utils/interfaces'
 import { useCallback, useEffect, useState } from 'react'
 import NearbyPopup from './NearbyPopup'
+import NodeContextMenu from './NodeContextMenu'
+import InterfacesPopup from './InterfacesPopup'
 import toast from 'react-hot-toast'
 
 const nodeTypes: NodeTypes = {
@@ -50,33 +59,80 @@ export default function Canvas() {
   const reactFlow = useReactFlow()
   const [linkSource, setLinkSource] = useState<string | null>(null)
 
-  const onConnect = useCallback(
-    (params: Connection) => {
-      const src = nodes.find(n => n.id === params.source)
-      const tgt = nodes.find(n => n.id === params.target)
+  const createConnection = useCallback(
+    (sourceId: string, targetId: string) => {
+      const sourceNode = nodes.find(n => n.id === sourceId)
+      const targetNode = nodes.find(n => n.id === targetId)
+      if (!sourceNode || !targetNode) return
+
+      const edgeId = `e-${sourceId}-${targetId}-${Date.now()}`
       let distance = 0
-      if (src?.data && tgt?.data) {
+      const sourceData = sourceNode.data as NodeData | undefined
+      const targetData = targetNode.data as NodeData | undefined
+      if (
+        typeof sourceData?.lat === 'number' &&
+        typeof sourceData.lon === 'number' &&
+        typeof targetData?.lat === 'number' &&
+        typeof targetData.lon === 'number'
+      ) {
         distance = distanceKm(
-          src.data.lat,
-          src.data.lon,
-          tgt.data.lat,
-          tgt.data.lon,
-          src.data.altitude || 0,
-          tgt.data.altitude || 0
+          sourceData.lat,
+          sourceData.lon,
+          targetData.lat,
+          targetData.lon,
+          Number(sourceData.altitude ?? 0),
+          Number(targetData.altitude ?? 0)
         )
       }
-      dispatch(
-        addEdge({
-          id: `${params.source}-${params.target}-${Date.now()}`,
-          source: params.source!,
-          target: params.target!,
-          style: { stroke: 'black' },
-          data: { distance },
-          label: `${Math.round(distance)} km`,
+
+      const edge: Edge = {
+        id: edgeId,
+        source: sourceNode.id,
+        target: targetNode.id,
+        style: { stroke: 'black' },
+        data: { distance },
+        label: `${Math.round(distance)} km`,
+      }
+
+      const updatedSource = addInterfaceToNode(
+        sourceNode,
+        createInterface({
+          node: sourceNode,
+          direction: 'out',
+          edgeId,
+          connectedNode: targetNode,
         })
       )
+
+      const updatedTarget = addInterfaceToNode(
+        targetNode,
+        createInterface({
+          node: targetNode,
+          direction: 'in',
+          edgeId,
+          connectedNode: sourceNode,
+        })
+      )
+
+      const updatedNodes = nodes.map(node => {
+        if (node.id === updatedSource.id) return updatedSource
+        if (node.id === updatedTarget.id) return updatedTarget
+        return node
+      })
+
+      dispatch(setElements({ nodes: updatedNodes, edges: [...edges, edge] }))
     },
-    [dispatch, nodes]
+    [dispatch, edges, nodes]
+  )
+
+  const onConnect = useCallback(
+    (params: Connection) => {
+      if (!params.source || !params.target) return
+      createConnection(params.source, params.target)
+      dispatch(closeNodeMenu())
+      dispatch(closeInterfaces())
+    },
+    [createConnection, dispatch]
   )
 
   const onNodesChange = useCallback(
@@ -111,7 +167,7 @@ export default function Canvas() {
       })
       const id = `${type}-${Date.now()}`
       const { lat, lon } = posToLatLon(position)
-      const data: any = { label: id, lat, lon }
+      const data: NodeData = { label: id, lat, lon, interfaces: [] }
       if (ALTITUDE_RANGES[type]) {
         data.altitude = ALTITUDE_RANGES[type].min
       }
@@ -149,7 +205,20 @@ export default function Canvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeContextMenu={(event, node) => {
+          event.preventDefault()
+          const width = 160
+          const leftBoundary = 80
+          const rightBoundary = window.innerWidth - (selectedId ? 320 : 0)
+          let x = event.clientX
+          let y = event.clientY
+          if (x + width > rightBoundary) x = rightBoundary - width - 10
+          if (x < leftBoundary) x = leftBoundary + 10
+          dispatch(openNodeMenu({ nodeId: node.id, x, y }))
+        }}
         onNodeClick={(event, node) => {
+          dispatch(closeNodeMenu())
+          dispatch(closeInterfaces())
           if (addingType === 'delete') {
             dispatch(removeElement(node.id))
             toast.success('Удалено')
@@ -160,30 +229,7 @@ export default function Canvas() {
               dispatch(updateNode({ ...node, className: 'ring-2 ring-blue-500' }))
             } else {
               if (linkSource !== node.id) {
-                const src = nodes.find(n => n.id === linkSource)
-                const tgt = nodes.find(n => n.id === node.id)
-                let distance = 0
-                if (src?.data && tgt?.data) {
-                  distance = distanceKm(
-                    src.data.lat,
-                    src.data.lon,
-                    tgt.data.lat,
-                    tgt.data.lon,
-                    src.data.altitude || 0,
-                    tgt.data.altitude || 0
-                  )
-                }
-                const id = `e-${linkSource}-${node.id}-${Date.now()}`
-                dispatch(
-                  addEdge({
-                    id,
-                    source: linkSource,
-                    target: node.id,
-                    style: { stroke: 'black' },
-                    data: { distance },
-                    label: `${Math.round(distance)} km`,
-                  })
-                )
+                createConnection(linkSource, node.id)
               }
               const srcNode = nodes.find(n => n.id === linkSource)
               if (srcNode) dispatch(updateNode({ ...srcNode, className: undefined }))
@@ -225,6 +271,8 @@ export default function Canvas() {
           }
         }}
         onEdgeClick={(_, edge) => {
+          dispatch(closeNodeMenu())
+          dispatch(closeInterfaces())
           if (addingType === 'delete') {
             dispatch(removeElement(edge.id))
             toast.success('Удалено')
@@ -232,6 +280,10 @@ export default function Canvas() {
             dispatch(select(edge.id))
           }
           dispatch(closeNearby())
+        }}
+        onPaneClick={() => {
+          dispatch(closeNodeMenu())
+          dispatch(closeInterfaces())
         }}
         fitView
         snapToGrid
@@ -244,6 +296,8 @@ export default function Canvas() {
         <MiniMap />
       </ReactFlow>
       <NearbyPopup />
+      <NodeContextMenu />
+      <InterfacesPopup />
     </div>
   )
 }

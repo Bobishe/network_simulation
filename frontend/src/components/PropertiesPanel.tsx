@@ -11,6 +11,12 @@ import {
 } from '../features/network/networkSlice'
 import { latLonToPos, updateEdgesDistances } from '../utils/geo'
 import { ALTITUDE_RANGES } from '../utils/altitudes'
+import {
+  parseInterfaceSelectionId,
+  directionLabels,
+  NodeInterface,
+  updateConnectedLabels,
+} from '../utils/interfaces'
 import toast from 'react-hot-toast'
 
 const typeNames: Record<string, string> = {
@@ -56,6 +62,107 @@ function NodePositionUpdater({ node }: { node: Node }) {
 export default function PropertiesPanel() {
   const dispatch = useAppDispatch()
   const { nodes, edges, selectedId } = useAppSelector(state => state.network)
+  const interfaceSelection = parseInterfaceSelectionId(selectedId)
+
+  useEffect(() => {
+    if (!interfaceSelection) return
+    const interfaceNode = nodes.find(n => n.id === interfaceSelection.nodeId)
+    if (
+      !interfaceNode ||
+      !interfaceNode.data ||
+      !Array.isArray(interfaceNode.data.interfaces)
+    ) {
+      dispatch(select(null))
+      return
+    }
+    const exists = (interfaceNode.data.interfaces as NodeInterface[]).some(
+      iface => iface.id === interfaceSelection.interfaceId
+    )
+    if (!exists) {
+      dispatch(select(null))
+    }
+  }, [dispatch, interfaceSelection, nodes])
+
+  if (interfaceSelection) {
+    const interfaceNode = nodes.find(n => n.id === interfaceSelection.nodeId)
+    if (!interfaceNode || !interfaceNode.data) return null
+    if (!Array.isArray(interfaceNode.data.interfaces)) return null
+
+    const interfaces = interfaceNode.data.interfaces as NodeInterface[]
+    const iface = interfaces.find(i => i.id === interfaceSelection.interfaceId)
+    if (!iface) return null
+
+    const nodeTitle = interfaceNode.data.label
+      ? String(interfaceNode.data.label)
+      : interfaceNode.id
+    const initialValues = {
+      name: iface.name || '',
+      description: iface.description || '',
+    }
+
+    return (
+      <div className="bg-white border-l px-4 py-6 overflow-y-auto" data-testid="properties-panel">
+        <div className="font-semibold mb-4">ИНТЕРФЕЙС • {nodeTitle}</div>
+        <div className="text-sm text-gray-600 space-y-1 mb-4">
+          <div>Направление: {directionLabels[iface.direction]}</div>
+          <div>Подключено к: {iface.connectedNodeLabel}</div>
+          <div>ID канала: {iface.edgeId}</div>
+        </div>
+        <Formik
+          initialValues={initialValues}
+          enableReinitialize
+          validationSchema={Yup.object({
+            name: Yup.string().required(),
+            description: Yup.string(),
+          })}
+          onSubmit={values => {
+            const updatedNodes = nodes.map(n => {
+              if (n.id !== interfaceNode.id) return n
+              if (!n.data || !Array.isArray(n.data.interfaces)) return n
+              const updatedInterfaces = (n.data.interfaces as NodeInterface[]).map(
+                item =>
+                  item.id === iface.id
+                    ? { ...item, name: values.name, description: values.description }
+                    : item
+              )
+              return {
+                ...n,
+                data: { ...(n.data ?? {}), interfaces: updatedInterfaces },
+              }
+            })
+            dispatch(setElements({ nodes: updatedNodes, edges }))
+            dispatch(select(null))
+            toast.success('Свойства сохранены')
+          }}
+        >
+          {() => (
+            <Form className="flex flex-col gap-2">
+              <label className="text-sm">Название</label>
+              <Field name="name" className="border rounded p-1" />
+              <label className="text-sm">Описание</label>
+              <Field
+                as="textarea"
+                name="description"
+                className="border rounded p-1 resize-y min-h-[80px]"
+              />
+              <div className="flex justify-end gap-2 mt-4">
+                <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded">
+                  Сохранить
+                </button>
+                <button
+                  type="button"
+                  onClick={() => dispatch(select(null))}
+                  className="px-3 py-1 border rounded"
+                >
+                  Закрыть
+                </button>
+              </div>
+            </Form>
+          )}
+        </Formik>
+      </div>
+    )
+  }
 
   const node = nodes.find(n => n.id === selectedId)
   const edge = edges.find(e => e.id === selectedId)
@@ -121,8 +228,13 @@ export default function PropertiesPanel() {
                   }
                 : n
             )
-            const updatedEdges = updateEdgesDistances(updatedNodes, edges)
-            dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
+            const nodesWithLabels = updateConnectedLabels(
+              updatedNodes,
+              node.id,
+              values.label
+            )
+            const updatedEdges = updateEdgesDistances(nodesWithLabels, edges)
+            dispatch(setElements({ nodes: nodesWithLabels, edges: updatedEdges }))
             dispatch(select(null))
             toast.success('Свойства сохранены')
           }}
