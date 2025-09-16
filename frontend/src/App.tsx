@@ -22,7 +22,10 @@ export default function App() {
         <div className="flex">
           <Canvas />
         </div>
-        <div style={{ display: selectedId ? 'block' : 'none' }}>
+        <div
+          style={{ display: selectedId ? 'block' : 'none' }}
+          className="h-full min-h-0 overflow-y-auto"
+        >
           <PropertiesPanel />
         </div>
         <Toaster position="top-right" />
