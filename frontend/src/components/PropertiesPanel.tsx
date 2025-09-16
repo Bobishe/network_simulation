@@ -235,7 +235,10 @@ export default function PropertiesPanel() {
     const descriptionTooltip = 'Краткое описание или заметка для интерфейса.'
 
     return (
-      <div className="bg-white border-l px-4 py-6 overflow-y-auto" data-testid="properties-panel">
+      <div
+        className="min-h-full bg-white border-l px-4 py-6"
+        data-testid="properties-panel"
+      >
         <div className="font-semibold mb-4">ИНТЕРФЕЙС • {nodeTitle}</div>
         <div className="text-sm text-gray-600 space-y-1 mb-4">
           <div>Направление: {directionLabels[iface.direction]}</div>
