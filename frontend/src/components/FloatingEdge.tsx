@@ -161,8 +161,8 @@ export default function FloatingEdge({
     typeof style?.stroke === 'string' && style.stroke.trim() !== ''
       ? style.stroke
       : '#b1b1b7'
-  const markerWidth = 25
-  const markerHeight = 25
+  const markerWidth = 10
+  const markerHeight = 10
 
   return (
     <>

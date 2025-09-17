@@ -1314,9 +1314,6 @@ export default function PropertiesPanel() {
                                         )
                                       }
                                     />
-                                    <div className="text-xs text-gray-500">
-                                      {`out_int{${safeRoute?.outPort ?? ''}}`}
-                                    </div>
                                   </div>
                                   <button
                                     type="button"
