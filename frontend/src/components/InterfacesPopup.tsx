@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
   closeInterfaces,
   closeNearby,
+  removeElement,
   select,
 } from '../features/network/networkSlice'
 import {
@@ -18,6 +19,7 @@ export default function InterfacesPopup() {
     state => state.network
   )
   const ref = useRef<HTMLDivElement>(null)
+  const [confirming, setConfirming] = useState(false)
 
   useEffect(() => {
     const handle = (event: MouseEvent) => {
@@ -28,6 +30,12 @@ export default function InterfacesPopup() {
     document.addEventListener('mousedown', handle)
     return () => document.removeEventListener('mousedown', handle)
   }, [dispatch])
+
+  useEffect(() => {
+    if (!interfacePopup) {
+      setConfirming(false)
+    }
+  }, [interfacePopup])
 
   useEffect(() => {
     if (!interfacePopup) return
@@ -49,6 +57,11 @@ export default function InterfacesPopup() {
     ? (node.data!.interfaces as NodeInterface[])
     : []
 
+  const activeInterface =
+    selection && selection.nodeId === node.id
+      ? interfaces.find(iface => iface.id === selection.interfaceId) ?? null
+      : null
+
   const width = 280
   const leftBoundary = 80
   const rightBoundary = window.innerWidth - (selectedId ? 320 : 0)
@@ -64,7 +77,7 @@ export default function InterfacesPopup() {
     <div
       ref={ref}
       style={{ position: 'absolute', left, top, width }}
-      className="bg-white border rounded shadow z-50 text-sm"
+      className="relative bg-white border rounded shadow z-50 text-sm"
       onClick={event => event.stopPropagation()}
     >
       <div className="px-3 py-2 border-b font-semibold">
@@ -84,11 +97,11 @@ export default function InterfacesPopup() {
               key={iface.id}
               type="button"
               onClick={() => {
+                setConfirming(false)
                 dispatch(
                   select(createInterfaceSelectionId(node.id, iface.id))
                 )
                 dispatch(closeNearby())
-                dispatch(closeInterfaces())
               }}
               className={`block w-full text-left px-3 py-2 hover:bg-gray-100 ${
                 active ? 'bg-blue-50' : ''
@@ -102,15 +115,61 @@ export default function InterfacesPopup() {
           )
         })}
       </div>
-      <div className="border-t flex justify-end">
+      <div className="border-t px-3 py-2 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          className={`text-sm font-medium text-red-600 hover:text-red-700 ${
+            activeInterface ? '' : 'opacity-50 cursor-not-allowed'
+          }`}
+          onClick={() => {
+            if (!activeInterface) return
+            setConfirming(true)
+          }}
+          disabled={!activeInterface}
+        >
+          Удалить
+        </button>
         <button
           type="button"
           className="px-3 py-1 text-sm"
-          onClick={() => dispatch(closeInterfaces())}
+          onClick={() => {
+            setConfirming(false)
+            dispatch(closeInterfaces())
+          }}
         >
           Закрыть
         </button>
       </div>
+      {confirming && activeInterface && (
+        <div
+          className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center gap-3 px-4 text-center rounded"
+          onClick={event => event.stopPropagation()}
+        >
+          <div className="font-semibold">Удалить выбранный интерфейс?</div>
+          <p className="text-sm text-gray-600">
+            Это действие удалит соединение с узлом {activeInterface.connectedNodeLabel}.
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="px-3 py-1 rounded bg-red-600 text-white"
+              onClick={() => {
+                dispatch(removeElement(activeInterface.edgeId))
+                setConfirming(false)
+              }}
+            >
+              Удалить
+            </button>
+            <button
+              type="button"
+              className="px-3 py-1 border rounded"
+              onClick={() => setConfirming(false)}
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
