@@ -8,6 +8,7 @@ import {
 } from '../../utils/interfaces'
 import type { NodeData, NodeInterface } from '../../utils/interfaces'
 import { NetworkState } from './types'
+import { prepareEdges } from '../../utils/edges'
 
 const initialState: NetworkState = {
   nodes: [],
@@ -30,7 +31,7 @@ const networkSlice = createSlice({
       action: PayloadAction<{ nodes: Node<NodeData>[]; edges: Edge[] }>
     ) {
       state.nodes = action.payload.nodes
-      state.edges = action.payload.edges
+      state.edges = prepareEdges(action.payload.edges)
     },
     setTopology(
       state,
@@ -50,8 +51,9 @@ const networkSlice = createSlice({
         }
         return normalizeNodeInterfaces({ ...node, data })
       })
-      state.nodes = ensureAllEdgeInterfaces(normalizedNodes, action.payload.edges)
-      state.edges = action.payload.edges
+      const preparedEdges = prepareEdges(action.payload.edges)
+      state.nodes = ensureAllEdgeInterfaces(normalizedNodes, preparedEdges)
+      state.edges = preparedEdges
       state.selectedId = null
       state.nearby = null
       state.contextMenu = null
@@ -61,7 +63,7 @@ const networkSlice = createSlice({
       state.nodes.push(action.payload)
     },
     addEdge(state, action: PayloadAction<Edge>) {
-      state.edges.push(action.payload)
+      state.edges = prepareEdges([...state.edges, action.payload])
     },
     updateNode(state, action: PayloadAction<Node<NodeData>>) {
       const idx = state.nodes.findIndex(n => n.id === action.payload.id)
@@ -86,14 +88,18 @@ const networkSlice = createSlice({
           .filter(e => e.source === id || e.target === id)
           .map(e => e.id)
         state.nodes = state.nodes.filter(n => n.id !== id)
-        state.edges = state.edges.filter(
-          e => e.id !== id && e.source !== id && e.target !== id
+        state.edges = prepareEdges(
+          state.edges.filter(
+            e => e.id !== id && e.source !== id && e.target !== id
+          )
         )
       } else {
         const edgeIndex = state.edges.findIndex(e => e.id === id)
         if (edgeIndex !== -1) {
           removedEdgeIds = [state.edges[edgeIndex].id]
-          state.edges.splice(edgeIndex, 1)
+          const nextEdges = [...state.edges]
+          nextEdges.splice(edgeIndex, 1)
+          state.edges = prepareEdges(nextEdges)
         }
       }
 
