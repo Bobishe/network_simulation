@@ -1,10 +1,22 @@
-import { ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/react/24/solid'
-import { useAppSelector } from '../hooks'
-import { useCallback, useEffect } from 'react'
+import { ArrowDownTrayIcon } from '@heroicons/react/24/solid'
+import { useAppDispatch, useAppSelector } from '../hooks'
+import { SVGProps, useCallback, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import classNames from 'classnames'
+import LinkIcon from '../img/link.png'
+import { setAddingType } from '../features/network/networkSlice'
+
+function FloppyDiskIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M4 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8.414a2 2 0 0 0-.586-1.414l-4.414-4.414A2 2 0 0 0 15.586 2H4zm0 2h11.586L20 8.414V20H16v-6a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v6H4V4zm4 0v4h6V4H8zm2 10h4v6h-4v-6z" />
+    </svg>
+  )
+}
 
 export default function TopBar() {
-  const { nodes, edges, topologyId } = useAppSelector(state => state.network)
+  const dispatch = useAppDispatch()
+  const { nodes, edges, topologyId, addingType } = useAppSelector(state => state.network)
 
   const handleDownload = () => {
     const json = JSON.stringify({ nodes, edges }, null, 2)
@@ -43,15 +55,28 @@ export default function TopBar() {
   }, [handleSave])
 
   return (
-    <div className="fixed top-0 left-0 w-full h-12 bg-white border-b flex items-center justify-between px-2 z-20">
+    <div className="fixed top-0 left-0 w-full h-12 bg-white border-b flex items-center px-2 z-20">
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => dispatch(setAddingType(addingType === 'link' ? null : 'link'))}
+          title="Связь"
+          className={classNames(
+            'flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200 border-2',
+            addingType === 'link' ? 'border-blue-500' : 'border-transparent'
+          )}
+        >
+          <img src={LinkIcon} alt="Связь" className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="flex items-center gap-2 ml-auto">
         <button
           type="button"
           onClick={handleSave}
           title="Сохранить топологию"
           className="flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200"
         >
-          <ArrowUpTrayIcon className="w-5 h-5" />
+          <FloppyDiskIcon className="w-5 h-5" />
         </button>
         <button
           type="button"

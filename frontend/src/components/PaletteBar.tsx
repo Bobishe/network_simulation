@@ -4,7 +4,6 @@ import MeoIcon from "../img/meo.png"
 import GeoIcon from "../img/geo.png"
 import GndIcon from "../img/gnd.png"
 import HaspIcon from "../img/hasp.png"
-import LinkIcon from "../img/link.png"
 
 
 const items = [
@@ -13,7 +12,6 @@ const items = [
   { type: "geo", icon: GeoIcon, label: "Геостационарная орбита"},
   { type: "gnd", icon: GndIcon, label: "Наземная станция" },
   { type: "haps", icon: HaspIcon, label: "Высотная платформа" },
-  { type: "link", icon: LinkIcon, label: "Связь" },
 ];
 
 export default function PaletteBar() {

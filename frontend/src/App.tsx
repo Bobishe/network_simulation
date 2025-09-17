@@ -16,7 +16,7 @@ export default function App() {
       <TopBar />
       <div
         className="h-full pt-12 grid"
-        style={{ gridTemplateColumns: selectedId ? '80px 1fr 320px' : '80px 1fr' }}
+        style={{ gridTemplateColumns: selectedId ? '80px 1fr 416px' : '80px 1fr' }}
       >
         <PaletteBar />
         <div className="flex">
