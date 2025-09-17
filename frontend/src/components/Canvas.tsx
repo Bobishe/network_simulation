@@ -3,6 +3,7 @@ import ReactFlow, {
   Controls,
   MiniMap,
   Edge,
+  Node,
   NodeChange,
   EdgeChange,
   Connection,
@@ -47,7 +48,13 @@ import {
   generateNodeCode,
   hasProcessing,
 } from '../utils/nodeProcessing'
-import { useCallback, useEffect, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type TouchEvent as ReactTouchEvent,
+} from 'react'
 import NearbyPopup from './NearbyPopup'
 import NodeContextMenu from './NodeContextMenu'
 import InterfacesPopup from './InterfacesPopup'
@@ -175,61 +182,60 @@ export default function Canvas() {
     (changes: NodeChange[]) => {
       if (!changes.length) return
 
-      const movedNodeIds = new Set(
-        changes.filter(change => change.type === 'position').map(change => change.id)
-      )
-
-      const previousNodes = new Map(nodes.map(node => [node.id, node]))
       const nextNodes = applyNodeChanges(changes, nodes)
 
       let nodesChanged = nextNodes.length !== nodes.length
-      let coordinatesChanged = false
 
-      const nodesWithCoords = nextNodes.map(node => {
-        const prevNode = previousNodes.get(node.id)
+      if (!nodesChanged) {
+        const previousNodes = new Map(nodes.map(node => [node.id, node]))
+        for (const node of nextNodes) {
+          const prevNode = previousNodes.get(node.id)
+          if (!prevNode || prevNode !== node) {
+            nodesChanged = true
+            break
+          }
+        }
+      }
 
-        if (!nodesChanged && prevNode !== node) {
-          nodesChanged = true
+      if (!nodesChanged) return
+
+      dispatch(setElements({ nodes: nextNodes, edges }))
+    },
+    [dispatch, nodes, edges]
+  )
+
+  const onNodeDragStop = useCallback(
+    (
+      _event: ReactMouseEvent | ReactTouchEvent,
+      _node: Node,
+      nodesCollection?: Node[]
+    ) => {
+      const movedNodes = nodesCollection && nodesCollection.length ? nodesCollection : [_node]
+      const movedIds = new Set(movedNodes.map(node => node.id))
+
+      const updatedNodes = nodes.map(currentNode => {
+        if (!movedIds.has(currentNode.id)) {
+          return currentNode
         }
 
-        if (!movedNodeIds.has(node.id)) {
-          return node
-        }
+        const { lat, lon } = posToLatLon(currentNode.position)
 
         if (
-          prevNode &&
-          (prevNode.position.x !== node.position.x ||
-            prevNode.position.y !== node.position.y)
+          currentNode.data &&
+          currentNode.data.lat === lat &&
+          currentNode.data.lon === lon
         ) {
-          coordinatesChanged = true
+          return currentNode
         }
-
-        const { lat, lon } = posToLatLon(node.position)
-        const prevLat = prevNode?.data?.lat
-        const prevLon = prevNode?.data?.lon
-        const currentLat = node.data?.lat
-        const currentLon = node.data?.lon
-
-        if (prevLat === lat && prevLon === lon && currentLat === lat && currentLon === lon) {
-          return node
-        }
-
-        coordinatesChanged = true
-        nodesChanged = true
 
         return {
-          ...node,
-          data: { ...(node.data ?? {}), lat, lon },
+          ...currentNode,
+          data: { ...(currentNode.data ?? {}), lat, lon },
         }
       })
 
-      if (!nodesChanged && !coordinatesChanged) return
-
-      const updatedEdges = coordinatesChanged
-        ? updateEdgesDistances(nodesWithCoords, edges)
-        : edges
-
-      dispatch(setElements({ nodes: nodesWithCoords, edges: updatedEdges }))
+      const updatedEdges = updateEdgesDistances(updatedNodes, edges)
+      dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
     },
     [dispatch, nodes, edges]
   )
@@ -308,6 +314,7 @@ export default function Canvas() {
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeDragStop={onNodeDragStop}
         onConnect={onConnect}
         defaultEdgeOptions={{
           type: 'floating',
