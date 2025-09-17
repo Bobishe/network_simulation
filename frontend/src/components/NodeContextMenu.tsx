@@ -3,11 +3,12 @@ import { useAppDispatch, useAppSelector } from '../hooks'
 import {
   closeNodeMenu,
   openInterfaces,
+  openDeleteConfirmation,
 } from '../features/network/networkSlice'
 
 export default function NodeContextMenu() {
   const dispatch = useAppDispatch()
-  const { contextMenu, selectedId } = useAppSelector(state => state.network)
+  const { contextMenu, selectedId, nodes } = useAppSelector(state => state.network)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -30,11 +31,14 @@ export default function NodeContextMenu() {
   if (left + width > rightBoundary) left = rightBoundary - width - 10
   if (left < leftBoundary) left = leftBoundary + 10
 
+  const node = nodes.find(n => n.id === contextMenu.nodeId)
+  const nodeLabel = node?.data?.label ? String(node.data.label) : contextMenu.nodeId
+
   return (
     <div
       ref={ref}
       style={{ position: 'absolute', left, top, width }}
-      className="bg-white border rounded shadow z-50 text-sm"
+      className="bg-white border rounded shadow z-50 text-sm divide-y"
       onClick={event => event.stopPropagation()}
     >
       <button
@@ -46,6 +50,22 @@ export default function NodeContextMenu() {
         }}
       >
         Интерфейсы
+      </button>
+      <button
+        type="button"
+        className="block w-full text-left px-3 py-2 hover:bg-gray-100 text-red-600"
+        onClick={() => {
+          dispatch(
+            openDeleteConfirmation({
+              elementId: contextMenu.nodeId,
+              elementType: 'node',
+              label: nodeLabel,
+            })
+          )
+          dispatch(closeNodeMenu())
+        }}
+      >
+        Удалить
       </button>
     </div>
   )

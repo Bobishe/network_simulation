@@ -18,6 +18,7 @@ const initialState: NetworkState = {
   nearby: null,
   contextMenu: null,
   interfacePopup: null,
+  deleteConfirmation: null,
 }
 
 const networkSlice = createSlice({
@@ -74,6 +75,7 @@ const networkSlice = createSlice({
       const id = action.payload
       state.contextMenu = null
       state.interfacePopup = null
+      state.deleteConfirmation = null
 
       const selection = parseInterfaceSelectionId(state.selectedId)
       let removedEdgeIds: string[] = []
@@ -166,6 +168,22 @@ const networkSlice = createSlice({
     closeInterfaces(state) {
       state.interfacePopup = null
     },
+    openDeleteConfirmation(
+      state,
+      action: PayloadAction<{
+        elementId: string
+        elementType: 'node' | 'edge'
+        label?: string
+      }>
+    ) {
+      state.deleteConfirmation = action.payload
+      state.contextMenu = null
+      state.interfacePopup = null
+      state.nearby = null
+    },
+    closeDeleteConfirmation(state) {
+      state.deleteConfirmation = null
+    },
   },
 })
 
@@ -185,5 +203,7 @@ export const {
   closeNodeMenu,
   openInterfaces,
   closeInterfaces,
+  openDeleteConfirmation,
+  closeDeleteConfirmation,
 } = networkSlice.actions
 export default networkSlice.reducer

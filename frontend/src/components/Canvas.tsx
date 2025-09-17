@@ -18,7 +18,6 @@ import {
   addNode,
   setElements,
   updateNode,
-  removeElement,
   select,
   setAddingType,
   openNearby,
@@ -49,6 +48,7 @@ import { useCallback, useEffect, useState } from 'react'
 import NearbyPopup from './NearbyPopup'
 import NodeContextMenu from './NodeContextMenu'
 import InterfacesPopup from './InterfacesPopup'
+import DeleteConfirmationDialog from './DeleteConfirmationDialog'
 import toast from 'react-hot-toast'
 
 const nodeTypes: NodeTypes = {
@@ -292,11 +292,7 @@ export default function Canvas() {
         onNodeClick={(event, node) => {
           dispatch(closeNodeMenu())
           dispatch(closeInterfaces())
-          if (addingType === 'delete') {
-            dispatch(removeElement(node.id))
-            toast.success('Удалено')
-            dispatch(closeNearby())
-          } else if (addingType === 'link') {
+          if (addingType === 'link') {
             if (!linkSource) {
               setLinkSource(node.id)
               dispatch(updateNode({ ...node, className: 'ring-2 ring-blue-500' }))
@@ -347,10 +343,7 @@ export default function Canvas() {
         onEdgeClick={(_, edge) => {
           dispatch(closeNodeMenu())
           dispatch(closeInterfaces())
-          if (addingType === 'delete') {
-            dispatch(removeElement(edge.id))
-            toast.success('Удалено')
-          } else if (addingType !== 'link') {
+          if (addingType !== 'link') {
             dispatch(select(edge.id))
           }
           dispatch(closeNearby())
@@ -372,6 +365,7 @@ export default function Canvas() {
       <NearbyPopup />
       <NodeContextMenu />
       <InterfacesPopup />
+      <DeleteConfirmationDialog />
     </div>
   )
 }
