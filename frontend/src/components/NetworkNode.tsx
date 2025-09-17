@@ -1,15 +1,14 @@
 import { NodeProps, useStore, Handle, Position } from 'reactflow'
 import classNames from 'classnames'
-import { CubeIcon } from '@heroicons/react/24/solid' // fallback, если картинки нет
+import { CubeIcon } from '@heroicons/react/24/solid'
 
 // PNG-картинки
 import leoPng from '../img/leo.png'
 import meoPng from '../img/meo.png'
 import geoPng from '../img/geo.png'
 import gndPng from '../img/gnd.png'
-import hapsPng from '../img/hasp.png' // если файл называется haps.png — поправь импорт
+import hapsPng from '../img/hasp.png'
 
-// тип -> путь к PNG
 const typeImages: Record<string, string> = {
   leo: leoPng,
   meo: meoPng,

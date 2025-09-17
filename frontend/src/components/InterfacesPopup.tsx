@@ -115,61 +115,8 @@ export default function InterfacesPopup() {
           )
         })}
       </div>
-      <div className="border-t px-3 py-2 flex items-center justify-between gap-3">
-        <button
-          type="button"
-          className={`text-sm font-medium text-red-600 hover:text-red-700 ${
-            activeInterface ? '' : 'opacity-50 cursor-not-allowed'
-          }`}
-          onClick={() => {
-            if (!activeInterface) return
-            setConfirming(true)
-          }}
-          disabled={!activeInterface}
-        >
-          Удалить
-        </button>
-        <button
-          type="button"
-          className="px-3 py-1 text-sm"
-          onClick={() => {
-            setConfirming(false)
-            dispatch(closeInterfaces())
-          }}
-        >
-          Закрыть
-        </button>
-      </div>
-      {confirming && activeInterface && (
-        <div
-          className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center gap-3 px-4 text-center rounded"
-          onClick={event => event.stopPropagation()}
-        >
-          <div className="font-semibold">Удалить выбранный интерфейс?</div>
-          <p className="text-sm text-gray-600">
-            Это действие удалит соединение с узлом {activeInterface.connectedNodeLabel}.
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="px-3 py-1 rounded bg-red-600 text-white"
-              onClick={() => {
-                dispatch(removeElement(activeInterface.edgeId))
-                setConfirming(false)
-              }}
-            >
-              Удалить
-            </button>
-            <button
-              type="button"
-              className="px-3 py-1 border rounded"
-              onClick={() => setConfirming(false)}
-            >
-              Отмена
-            </button>
-          </div>
-        </div>
-      )}
+  
+   
     </div>
   )
 }
