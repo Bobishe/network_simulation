@@ -10,4 +10,7 @@ export interface NetworkState {
   nearby: { ids: string[]; x: number; y: number } | null
   contextMenu: { nodeId: string; x: number; y: number } | null
   interfacePopup: { nodeId: string; x: number; y: number } | null
+  deleteConfirmation:
+    | { elementId: string; elementType: 'node' | 'edge'; label?: string }
+    | null
 }

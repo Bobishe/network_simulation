@@ -1,5 +1,4 @@
-import PaletteButton from './PaletteButton'
-import { TrashIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/react/24/solid'
+import { ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/react/24/solid'
 import { useAppSelector } from '../hooks'
 import { useCallback, useEffect } from 'react'
 import toast from 'react-hot-toast'
@@ -63,7 +62,6 @@ export default function TopBar() {
           <ArrowDownTrayIcon className="w-5 h-5" />
         </button>
       </div>
-      <PaletteButton icon={TrashIcon} label="Удалить" type="delete" />
     </div>
   )
 }
