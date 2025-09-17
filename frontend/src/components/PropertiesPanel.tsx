@@ -11,7 +11,7 @@ import {
   setModel,
   setElements,
 } from '../features/network/networkSlice'
-import { latLonToPos, updateEdgesDistances } from '../utils/geo'
+import { latLonToPos, posToLatLon, updateEdgesDistances } from '../utils/geo'
 import { ALTITUDE_RANGES } from '../utils/altitudes'
 import {
   parseInterfaceSelectionId,
@@ -135,18 +135,24 @@ function NodePositionUpdater({ node }: { node: Node }) {
     const lon = Number(values.lon)
     if (isNaN(lat) || isNaN(lon)) return
 
-    const currentLat =
-      typeof node.data?.lat === 'number' ? node.data.lat : undefined
-    const currentLon =
-      typeof node.data?.lon === 'number' ? node.data.lon : undefined
+    const currentLat = Number(node.data?.lat)
+    const currentLon = Number(node.data?.lon)
+    const hasCurrentCoords =
+      Number.isFinite(currentLat) && Number.isFinite(currentLon)
 
-    if (
-      currentLat !== undefined &&
-      currentLon !== undefined &&
+    const { lat: positionLat, lon: positionLon } = posToLatLon(node.position)
+
+    const dataMatches =
+      hasCurrentCoords &&
       Math.abs(currentLat - lat) < COORDINATE_EPSILON &&
       Math.abs(currentLon - lon) < COORDINATE_EPSILON
-    )
-      return
+
+    const positionMatches =
+      Math.abs(positionLat - lat) < COORDINATE_EPSILON &&
+      Math.abs(positionLon - lon) < COORDINATE_EPSILON
+
+    if (dataMatches && positionMatches) return
+
     const position = latLonToPos(lat, lon)
     const updatedNodes = nodes.map(n =>
       n.id === node.id
