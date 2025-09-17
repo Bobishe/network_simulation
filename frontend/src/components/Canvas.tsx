@@ -11,8 +11,9 @@ import ReactFlow, {
   useReactFlow,
   MarkerType,
 } from 'reactflow'
-import type { NodeTypes } from 'reactflow'
+import type { NodeTypes, EdgeTypes } from 'reactflow'
 import NetworkNode from './NetworkNode'
+import FloatingEdge from './FloatingEdge'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
   addNode,
@@ -57,6 +58,10 @@ const nodeTypes: NodeTypes = {
   geo: NetworkNode,
   gnd: NetworkNode,
   haps: NetworkNode,
+}
+
+const edgeTypes: EdgeTypes = {
+  floating: FloatingEdge,
 }
 
 export default function Canvas() {
@@ -272,10 +277,12 @@ export default function Canvas() {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         defaultEdgeOptions={{
+          type: 'floating',
           markerEnd: { type: MarkerType.ArrowClosed, color: 'black' },
         }}
         onNodeContextMenu={(event, node) => {
