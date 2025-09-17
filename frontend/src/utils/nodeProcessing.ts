@@ -23,7 +23,8 @@ export const createDefaultProcessing = (): ProcessingConfig => ({
   serviceLines: 1,
   queue: 0,
   mu: 1,
-  routing: [
+  dist: 'Exponential',
+  routingTable: [
     { type: 1, outPort: 1 },
     { type: 2, outPort: 2 },
   ],
@@ -32,7 +33,7 @@ export const createDefaultProcessing = (): ProcessingConfig => ({
 export const normalizeRouting = (routing?: RoutingRule[]): RoutingRule[] => {
   if (!Array.isArray(routing) || routing.length === 0) {
     const defaults = createDefaultProcessing()
-    return defaults.routing
+    return defaults.routingTable
   }
 
   return routing.map(rule => {
@@ -61,9 +62,16 @@ export const normalizeProcessing = (
   const mu =
     typeof config.mu === 'number' && config.mu > 0 ? config.mu : defaults.mu
 
-  const routing = normalizeRouting(config.routing)
+  const routing = normalizeRouting(
+    Array.isArray((config as any).routingTable)
+      ? ((config as any).routingTable as RoutingRule[])
+      : config.routing ?? undefined
+  )
+  const dist = typeof config.dist === 'string' && config.dist
+    ? config.dist
+    : defaults.dist
 
-  return { serviceLines, queue, mu, routing }
+  return { serviceLines, queue, mu, dist, routingTable: routing }
 }
 
 export const generateNodeCode = (

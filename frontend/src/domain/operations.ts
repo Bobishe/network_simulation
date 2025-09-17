@@ -1,4 +1,12 @@
-import { Edge, Node, Port, PortDir, Topology, PortParams } from './types'
+import {
+  Edge,
+  Node,
+  Port,
+  PortDir,
+  PortQueueConfig,
+  PortServiceConfig,
+  Topology,
+} from './types'
 import { isConnectionAllowed } from './rules'
 
 const generateId = (): string =>
@@ -12,7 +20,7 @@ const getNextPortIdx = (node: Node, dir: PortDir): number => {
 
 export const isPortFree = (topology: Topology, portId: string): boolean =>
   !topology.edges.some(
-    (e) => e.from.portId === portId || e.to.portId === portId
+    (e) => e.from.portId === portId || (e.to && e.to.portId === portId)
   )
 
 const updatePort = (
@@ -31,9 +39,14 @@ const updatePort = (
   return node
 }
 
-const defaultParams: Record<PortDir, PortParams> = {
-  in: { q: 20, mu: 10 },
-  out: { q: 20, mu: 9 },
+const defaultQueues: Record<PortDir, PortQueueConfig> = {
+  in: { q_in: 20 },
+  out: { q_out: 20 },
+}
+
+const defaultServices: Record<PortDir, PortServiceConfig> = {
+  in: { mu_in: 10, dist_in: 'Exponential', servers_in: 1 },
+  out: { mu_out: 9, dist_out: 'Exponential', servers_out: 1 },
 }
 
 const addPort = (
@@ -48,7 +61,8 @@ const addPort = (
     dir,
     idx,
     label: `${dir}-${idx}`,
-    params: { ...defaultParams[dir] },
+    queue: { ...defaultQueues[dir] },
+    service: { ...defaultServices[dir] },
     persistent: false,
     locked: false,
     ...partial,
@@ -126,7 +140,10 @@ export const onConnect = (
 
   if (
     topology.edges.some(
-      (e) => e.from.portId === sourcePort.id && e.to.portId === targetPort!.id
+      (e) =>
+        e.from.portId === sourcePort.id &&
+        e.to &&
+        e.to.portId === targetPort!.id
     )
   ) {
     throw new Error('Duplicate edge')
@@ -137,8 +154,17 @@ export const onConnect = (
 
   const edge: Edge = {
     id: generateId(),
-    from: { nodeId: sourceNode.id, portId: sourcePort.id },
-    to: { nodeId: targetNode.id, portId: targetPort.id },
+    from: {
+      nodeId: sourceNode.id,
+      portId: sourcePort.id,
+      portIdx: sourcePort.idx,
+    },
+    to: {
+      nodeId: targetNode.id,
+      portId: targetPort.id,
+      portIdx: targetPort.idx,
+    },
+    direction: 'uni',
   }
 
   const nodes = topology.nodes.map((n) => {
@@ -147,7 +173,7 @@ export const onConnect = (
     return n
   })
 
-  return { nodes, edges: [...topology.edges, edge] }
+  return { model: topology.model, nodes, edges: [...topology.edges, edge] }
 }
 
 export const removeEdge = (topology: Topology, edgeId: string): Topology => {
@@ -165,7 +191,7 @@ export const removeEdge = (topology: Topology, edgeId: string): Topology => {
     const port = ports.find((p) => p.id === portId)
     if (!port) return node
     const stillUsed = edges.some(
-      (e) => e.from.portId === portId || e.to.portId === portId
+      (e) => e.from.portId === portId || (e.to && e.to.portId === portId)
     )
     if (!stillUsed && !port.persistent && !port.locked) {
       const newPorts = ports.filter((p) => p.id !== portId)
@@ -178,11 +204,11 @@ export const removeEdge = (topology: Topology, edgeId: string): Topology => {
 
   const nodes = topology.nodes.map((n) => {
     if (n.id === edge.from.nodeId) return cleanPort(n, edge.from.portId)
-    if (n.id === edge.to.nodeId) return cleanPort(n, edge.to.portId)
+    if (edge.to && n.id === edge.to.nodeId) return cleanPort(n, edge.to.portId)
     return n
   })
 
-  return { nodes, edges }
+  return { model: topology.model, nodes, edges }
 }
 
 export const helpers = {
