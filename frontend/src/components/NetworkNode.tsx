@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { NodeProps, useStore, Handle, Position } from 'reactflow'
 import classNames from 'classnames'
 import { CubeIcon } from '@heroicons/react/24/solid'
@@ -17,6 +18,12 @@ const typeImages: Record<string, string> = {
   haps: hapsPng,
 }
 
+const hiddenHandleStyle: CSSProperties = {
+  opacity: 0,
+  background: 'transparent',
+  border: 'none',
+}
+
 export default function NetworkNode({ data, type, selected, className }: NodeProps<any>) {
   const zoom = useStore(state => state.transform[2])
   const src = type ? typeImages[type] : undefined
@@ -33,7 +40,12 @@ export default function NetworkNode({ data, type, selected, className }: NodePro
         )}
         style={{ width: 8, height: 8 }}
       >
-        <Handle type="target" position={Position.Left} className="w-1 h-1" />
+        <Handle
+          type="target"
+          position={Position.Left}
+          className="w-1 h-1"
+          style={hiddenHandleStyle}
+        />
         {src ? (
           <img
             src={src}
@@ -44,7 +56,12 @@ export default function NetworkNode({ data, type, selected, className }: NodePro
         ) : (
           <CubeIcon className="w-2 h-2" aria-hidden />
         )}
-        <Handle type="source" position={Position.Right} className="w-1 h-1" />
+        <Handle
+          type="source"
+          position={Position.Right}
+          className="w-1 h-1"
+          style={hiddenHandleStyle}
+        />
       </div>
     )
   }
@@ -58,7 +75,12 @@ export default function NetworkNode({ data, type, selected, className }: NodePro
         className
       )}
     >
-      <Handle type="target" position={Position.Left} className="w-2 h-2" />
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="w-2 h-2"
+        style={hiddenHandleStyle}
+      />
       {src ? (
         <img
           src={src}
@@ -70,7 +92,12 @@ export default function NetworkNode({ data, type, selected, className }: NodePro
         <CubeIcon className="w-4 h-4" aria-hidden />
       )}
       <span>{data?.label}</span>
-      <Handle type="source" position={Position.Right} className="w-2 h-2" />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="w-2 h-2"
+        style={hiddenHandleStyle}
+      />
     </div>
   )
 }

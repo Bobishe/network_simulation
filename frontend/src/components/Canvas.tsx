@@ -106,6 +106,8 @@ export default function Canvas() {
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: 'black',
+          width: 25,
+          height: 25,
         },
       }
 
@@ -283,7 +285,12 @@ export default function Canvas() {
         onConnect={onConnect}
         defaultEdgeOptions={{
           type: 'floating',
-          markerEnd: { type: MarkerType.ArrowClosed, color: 'black' },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: 'black',
+            width: 25,
+            height: 25,
+          },
         }}
         onNodeContextMenu={(event, node) => {
           event.preventDefault()
