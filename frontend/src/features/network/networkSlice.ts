@@ -32,8 +32,27 @@ const networkSlice = createSlice({
       state,
       action: PayloadAction<{ nodes: Node<NodeData>[]; edges: Edge[] }>
     ) {
-      state.nodes = action.payload.nodes
-      state.edges = prepareEdges(action.payload.edges)
+      const { nodes, edges } = action.payload
+
+      const nodesChanged =
+        state.nodes.length !== nodes.length ||
+        state.nodes.some((node, idx) => node !== nodes[idx])
+
+      const edgesChanged =
+        state.edges.length !== edges.length ||
+        state.edges.some((edge, idx) => edge !== edges[idx])
+
+      if (!nodesChanged && !edgesChanged) {
+        return
+      }
+
+      if (nodesChanged) {
+        state.nodes = nodes
+      }
+
+      if (edgesChanged) {
+        state.edges = prepareEdges(edges)
+      }
     },
     setTopology(
       state,
