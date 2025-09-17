@@ -122,6 +122,8 @@ function LabelWithTooltip({
   )
 }
 
+const COORDINATE_EPSILON = 1e-6
+
 function NodePositionUpdater({ node }: { node: Node }) {
   const { values } = useFormikContext<any>()
   const dispatch = useAppDispatch()
@@ -131,10 +133,18 @@ function NodePositionUpdater({ node }: { node: Node }) {
     if (!node) return
     const lat = Number(values.lat)
     const lon = Number(values.lon)
+    if (isNaN(lat) || isNaN(lon)) return
+
+    const currentLat =
+      typeof node.data?.lat === 'number' ? node.data.lat : undefined
+    const currentLon =
+      typeof node.data?.lon === 'number' ? node.data.lon : undefined
+
     if (
-      isNaN(lat) ||
-      isNaN(lon) ||
-      (node.data?.lat === lat && node.data?.lon === lon)
+      currentLat !== undefined &&
+      currentLon !== undefined &&
+      Math.abs(currentLat - lat) < COORDINATE_EPSILON &&
+      Math.abs(currentLon - lon) < COORDINATE_EPSILON
     )
       return
     const position = latLonToPos(lat, lon)
