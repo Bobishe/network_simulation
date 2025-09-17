@@ -835,93 +835,124 @@ export default function PropertiesPanel() {
                       tooltip="Сопоставляет type_data номеру выходного порта (out_int{idx})."
                     />
                     <FieldArray name="routing">
-                      {arrayHelpers => (
-                        <div className="flex flex-col gap-2">
-                          {values.routing.map((route, index) => (
-                            <div
-                              key={index}
-                              className="flex flex-wrap gap-2 items-end min-w-[320px]"
-                            >
-                              <div className="flex flex-col gap-1">
-                                <label
-                                  className="text-sm"
-                                  htmlFor={`routing-${index}-type`}
-                                >
-                                  type_data
-                                </label>
-                                <input
-                                  id={`routing-${index}-type`}
-                                  type="number"
-                                  min={1}
-                                  className="border rounded p-1 w-28"
-                                  value={route.type}
-                                  onChange={event =>
-                                    setFieldValue(
-                                      `routing[${index}].type`,
-                                      Math.max(
-                                        1,
-                                        Math.floor(Number(event.target.value))
-                                      )
-                                    )
-                                  }
-                                />
+                      {arrayHelpers => {
+                        const routingValues = Array.isArray(values.routing)
+                          ? values.routing
+                          : []
+
+                        return (
+                          <div className="flex flex-col gap-2">
+                            {routingValues.length === 0 && (
+                              <div className="text-sm text-gray-500">
+                                Нет правил маршрутизации. Добавьте правило.
                               </div>
-                              <div className="flex flex-col gap-1">
-                                <label
-                                  className="text-sm"
-                                  htmlFor={`routing-${index}-out`}
+                            )}
+
+                            {routingValues.map((route, index) => {
+                              const safeRoute = (
+                                route && typeof route === 'object'
+                                  ? route
+                                  : { type: 1, outPort: 1 }
+                              ) as RoutingFormValue
+
+                              return (
+                                <div
+                                  key={index}
+                                  className="flex flex-wrap gap-2 items-end min-w-[320px]"
                                 >
-                                  Выходной порт (idx)
-                                </label>
-                                <input
-                                  id={`routing-${index}-out`}
-                                  type="number"
-                                  min={1}
-                                  className="border rounded p-1 w-32"
-                                  value={route.outPort}
-                                  onChange={event =>
-                                    setFieldValue(
-                                      `routing[${index}].outPort`,
-                                      Math.max(
-                                        1,
-                                        Math.floor(Number(event.target.value))
-                                      )
-                                    )
-                                  }
-                                />
-                                <div className="text-xs text-gray-500">
-                                  {`out_int{${route.outPort}}`}
+                                  <div className="flex flex-col gap-1">
+                                    <label
+                                      className="text-sm"
+                                      htmlFor={`routing-${index}-type`}
+                                    >
+                                      type_data
+                                    </label>
+                                    <input
+                                      id={`routing-${index}-type`}
+                                      type="number"
+                                      min={1}
+                                      className="border rounded p-1 w-28"
+                                      value={safeRoute?.type ?? ''}
+                                      onChange={event =>
+                                        setFieldValue(
+                                          `routing[${index}].type`,
+                                          Math.max(
+                                            1,
+                                            Math.floor(Number(event.target.value))
+                                          )
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                    <label
+                                      className="text-sm"
+                                      htmlFor={`routing-${index}-out`}
+                                    >
+                                      Выходной порт (idx)
+                                    </label>
+                                    <input
+                                      id={`routing-${index}-out`}
+                                      type="number"
+                                      min={1}
+                                      className="border rounded p-1 w-32"
+                                      value={safeRoute?.outPort ?? ''}
+                                      onChange={event =>
+                                        setFieldValue(
+                                          `routing[${index}].outPort`,
+                                          Math.max(
+                                            1,
+                                            Math.floor(Number(event.target.value))
+                                          )
+                                        )
+                                      }
+                                    />
+                                    <div className="text-xs text-gray-500">
+                                      {`out_int{${safeRoute?.outPort ?? ''}}`}
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+                                    onClick={() => arrayHelpers.remove(index)}
+                                    disabled={routingValues.length <= 1}
+                                  >
+                                    Удалить
+                                  </button>
                                 </div>
-                              </div>
-                              <button
-                                type="button"
-                                className="px-2 py-1 text-sm border rounded disabled:opacity-50"
-                                onClick={() => arrayHelpers.remove(index)}
-                                disabled={values.routing.length <= 1}
-                              >
-                                Удалить
-                              </button>
-                            </div>
-                          ))}
-                          <button
-                            type="button"
-                            className="self-start px-2 py-1 text-sm border rounded"
-                            onClick={() => {
-                              const nextType =
-                                values.routing.length > 0
-                                  ? Math.max(
-                                      ...values.routing.map(item =>
-                                        Number(item.type) || 0
-                                      )
-                                    ) + 1
-                                  : 1
-                              arrayHelpers.push({ type: nextType, outPort: 1 })
-                            }}
-                          >
-                            Добавить правило
-                          </button>
-                        </div>
-                      )}
+                              )
+                            })}
+
+                            <button
+                              type="button"
+                              className="self-start px-2 py-1 text-sm border rounded"
+                              onClick={() => {
+                                const nextType =
+                                  routingValues.length > 0
+                                    ? Math.max(
+                                        ...routingValues.map(item =>
+                                          Number(item?.type) || 0
+                                        )
+                                      ) + 1
+                                    : 1
+
+                                const newRule: RoutingFormValue = {
+                                  type: nextType,
+                                  outPort: 1,
+                                }
+
+                                if (!Array.isArray(values.routing)) {
+                                  setFieldValue('routing', [newRule])
+                                } else {
+                                  arrayHelpers.push(newRule)
+                                }
+                              }}
+                            >
+                              Добавить правило
+                            </button>
+                          </div>
+                        )
+                      }}
                     </FieldArray>
                   </div>
                 </div>
