@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, PayloadAction, current } from '@reduxjs/toolkit'
 import type { Node, Edge } from 'reactflow'
 import {
   ensureAllEdgeInterfaces,
@@ -34,13 +34,16 @@ const networkSlice = createSlice({
     ) {
       const { nodes, edges } = action.payload
 
+      const currentNodes = current(state.nodes)
+      const currentEdges = current(state.edges)
+
       const nodesChanged =
-        state.nodes.length !== nodes.length ||
-        state.nodes.some((node, idx) => node !== nodes[idx])
+        currentNodes.length !== nodes.length ||
+        currentNodes.some((node, idx) => node !== nodes[idx])
 
       const edgesChanged =
-        state.edges.length !== edges.length ||
-        state.edges.some((edge, idx) => edge !== edges[idx])
+        currentEdges.length !== edges.length ||
+        currentEdges.some((edge, idx) => edge !== edges[idx])
 
       if (!nodesChanged && !edgesChanged) {
         return
