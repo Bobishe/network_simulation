@@ -99,6 +99,8 @@ const getPerpendicularOffset = (
   return { x: nx, y: ny }
 }
 
+const ARROW_OFFSET = 10
+
 type FloatingEdgeData = {
   parallelOffset?: number
   [key: string]: unknown
@@ -136,11 +138,28 @@ export default function FloatingEdge({
     y: sourceCenter.y + offsetVector.y,
   })
 
+  const adjustedTargetIntersection = (() => {
+    const dx = targetIntersection.x - sourceIntersection.x
+    const dy = targetIntersection.y - sourceIntersection.y
+    const distance = Math.sqrt(dx * dx + dy * dy)
+
+    if (!distance) {
+      return targetIntersection
+    }
+
+    const offset = Math.min(ARROW_OFFSET, Math.max(distance - 1, 0))
+
+    return {
+      x: targetIntersection.x - (dx / distance) * offset,
+      y: targetIntersection.y - (dy / distance) * offset,
+    }
+  })()
+
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition } = {
     sourceX: sourceIntersection.x,
     sourceY: sourceIntersection.y,
-    targetX: targetIntersection.x,
-    targetY: targetIntersection.y,
+    targetX: adjustedTargetIntersection.x,
+    targetY: adjustedTargetIntersection.y,
     sourcePosition: getHandlePosition(sourceCenter, sourceIntersection),
     targetPosition: getHandlePosition(targetCenter, targetIntersection),
   }
