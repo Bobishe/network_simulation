@@ -40,6 +40,11 @@ import {
   createInterface,
   NodeData,
 } from '../utils/interfaces'
+import {
+  createDefaultProcessing,
+  generateNodeCode,
+  hasProcessing,
+} from '../utils/nodeProcessing'
 import { useCallback, useEffect, useState } from 'react'
 import NearbyPopup from './NearbyPopup'
 import NodeContextMenu from './NodeContextMenu'
@@ -231,11 +236,16 @@ export default function Canvas() {
       if (ALTITUDE_RANGES[type]) {
         data.altitude = ALTITUDE_RANGES[type].min
       }
+      if (hasProcessing(type)) {
+        const code = generateNodeCode(type, nodes)
+        if (code) data.code = code
+        data.processing = createDefaultProcessing()
+      }
       dispatch(addNode({ id, type, position, data }))
       dispatch(setAddingType(null))
       toast.success('Узел добавлен')
     },
-    [dispatch, reactFlow]
+    [dispatch, reactFlow, nodes]
   )
 
   const onDragOver = useCallback((event: React.DragEvent) => {

@@ -26,12 +26,26 @@ export interface NodeInterface {
   distribution?: string
 }
 
+export interface RoutingRule {
+  type: number
+  outPort: number
+}
+
+export interface ProcessingConfig {
+  serviceLines: number
+  queue: number
+  mu: number
+  routing: RoutingRule[]
+}
+
 export interface NodeData {
   label?: string
   lat?: number
   lon?: number
   altitude?: number
   location?: string
+  code?: string
+  processing?: ProcessingConfig
   interfaces?: NodeInterface[]
   [key: string]: unknown
 }
