@@ -110,7 +110,6 @@ export default function FloatingEdge({
   id,
   source,
   target,
-  markerEnd,
   style,
   data,
   label,
@@ -138,28 +137,11 @@ export default function FloatingEdge({
     y: sourceCenter.y + offsetVector.y,
   })
 
-  const adjustedTargetIntersection = (() => {
-    const dx = targetIntersection.x - sourceIntersection.x
-    const dy = targetIntersection.y - sourceIntersection.y
-    const distance = Math.sqrt(dx * dx + dy * dy)
-
-    if (!distance) {
-      return targetIntersection
-    }
-
-    const offset = Math.min(ARROW_OFFSET, Math.max(distance - 1, 0))
-
-    return {
-      x: targetIntersection.x - (dx / distance) * offset,
-      y: targetIntersection.y - (dy / distance) * offset,
-    }
-  })()
-
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition } = {
     sourceX: sourceIntersection.x,
     sourceY: sourceIntersection.y,
-    targetX: adjustedTargetIntersection.x,
-    targetY: adjustedTargetIntersection.y,
+    targetX: targetIntersection.x,
+    targetY: targetIntersection.y,
     sourcePosition: getHandlePosition(sourceCenter, sourceIntersection),
     targetPosition: getHandlePosition(targetCenter, targetIntersection),
   }
@@ -173,9 +155,35 @@ export default function FloatingEdge({
     targetPosition,
   })
 
+  const markerId = `floating-arrow-${id}`
+  const markerUrl = `url(#${markerId})`
+  const strokeColor =
+    typeof style?.stroke === 'string' && style.stroke.trim() !== ''
+      ? style.stroke
+      : '#b1b1b7'
+  const markerWidth = 25
+  const markerHeight = 25
+
   return (
     <>
-      <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} style={style} />
+      <defs>
+        <marker
+          id={markerId}
+          markerWidth={markerWidth + ARROW_OFFSET}
+          markerHeight={markerHeight}
+          viewBox={`0 0 ${markerWidth + ARROW_OFFSET} ${markerHeight}`}
+          refX={markerWidth + ARROW_OFFSET}
+          refY={markerHeight / 2}
+          orient="auto"
+          markerUnits="userSpaceOnUse"
+        >
+          <path
+            d={`M 0 0 L ${markerWidth} ${markerHeight / 2} L 0 ${markerHeight} z`}
+            fill={strokeColor}
+          />
+        </marker>
+      </defs>
+      <BaseEdge id={id} path={edgePath} markerEnd={markerUrl} style={style} />
       {label && (
         <EdgeLabelRenderer>
           <div
