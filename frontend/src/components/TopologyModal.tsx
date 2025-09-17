@@ -50,8 +50,14 @@ export default function TopologyModal({ onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
-      <div className="bg-white p-4 rounded w-96 max-h-[80vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white p-4 rounded w-96 max-h-[80vh] overflow-y-auto"
+        onClick={event => event.stopPropagation()}
+      >
         <h2 className="text-lg font-bold mb-4">Выберите топологию</h2>
         <ul className="mb-4 space-y-2">
           {topologies.map(t => (
