@@ -8,6 +8,7 @@ import {
   updateNode,
   updateEdge,
   select,
+  setModel,
   setElements,
 } from '../features/network/networkSlice'
 import { latLonToPos, updateEdgesDistances } from '../utils/geo'
@@ -18,6 +19,7 @@ import {
   InterfaceResourceType,
   InterfaceSpeedMode,
   NodeInterface,
+  GeneratorConfig,
   updateConnectedLabels,
 } from '../utils/interfaces'
 import {
@@ -25,7 +27,9 @@ import {
   hasProcessing,
   normalizeProcessing,
 } from '../utils/nodeProcessing'
+import { createDefaultGenerator } from '../utils/generatorConfig'
 import toast from 'react-hot-toast'
+import type { ModelConfig } from '../domain/types'
 
 const typeNames: Record<string, string> = {
   leo: 'Низкая орбита',
@@ -33,6 +37,8 @@ const typeNames: Record<string, string> = {
   geo: 'Геостационарная орбита',
   gnd: 'Наземная станция',
   haps: 'Высотная платформа',
+  as: 'Узел AS',
+  ssop: 'Узел SSOP',
 }
 
 type InterfaceFormValues = {
@@ -54,6 +60,18 @@ type RoutingFormValue = {
   outPort: number
 }
 
+interface ModelFormValues {
+  modelId: string
+  duration: number
+  timeUnit: string
+  seed: number | ''
+  capacityDist: string
+  minBytes: number
+  maxBytes: number
+  mtu: number
+  dataTypes: string
+}
+
 interface NodeFormValues {
   label: string
   lat: number
@@ -64,7 +82,20 @@ interface NodeFormValues {
   serviceLines: number
   queue: number
   mu: number
-  routing: RoutingFormValue[]
+  dist: string
+  routingTable: RoutingFormValue[]
+}
+
+interface GeneratorFormValues {
+  label: string
+  lat: number
+  lon: number
+  lambda: number
+  typeData: number
+  capacitySource: 'capacity' | 'custom'
+  targetNodeId: string
+  targetInPortId: string
+  targetInPortIdx: number | null
 }
 
 function LabelWithTooltip({
@@ -125,7 +156,9 @@ function NodePositionUpdater({ node }: { node: Node }) {
 
 export default function PropertiesPanel() {
   const dispatch = useAppDispatch()
-  const { nodes, edges, selectedId } = useAppSelector(state => state.network)
+  const { nodes, edges, model, selectedId } = useAppSelector(
+    state => state.network
+  )
   const interfaceSelection = parseInterfaceSelectionId(selectedId)
 
   useEffect(() => {
@@ -601,10 +634,362 @@ export default function PropertiesPanel() {
   const node = nodes.find(n => n.id === selectedId)
   const edge = edges.find(e => e.id === selectedId)
 
-  if (!node && !edge) return null
+  if (!node && !edge) {
+    const params = model.traffic.capacity.params
+    const initialValues: ModelFormValues = {
+      modelId: model.model.id,
+      duration: model.sim.duration,
+      timeUnit: model.time?.unit ?? '',
+      seed:
+        typeof model.rng?.seed === 'number' && !Number.isNaN(model.rng.seed)
+          ? model.rng.seed
+          : '',
+      capacityDist: model.traffic.capacity.dist,
+      minBytes: typeof params?.minBytes === 'number' ? params.minBytes : 0,
+      maxBytes: typeof params?.maxBytes === 'number' ? params.maxBytes : 0,
+      mtu: model.packet.mtu,
+      dataTypes: Array.isArray(model.dataTypes)
+        ? model.dataTypes.join(', ')
+        : '',
+    }
+
+    return (
+      <div className="bg-white border-l px-4 py-6 overflow-auto" data-testid="properties-panel">
+        <div className="font-semibold mb-4">ГЛОБАЛЬНАЯ МОДЕЛЬ</div>
+        <Formik<ModelFormValues>
+          initialValues={initialValues}
+          enableReinitialize
+          validationSchema={Yup.object({
+            modelId: Yup.string().required(),
+            duration: Yup.number().moreThan(0).required(),
+            timeUnit: Yup.string(),
+            seed: Yup.number()
+              .integer()
+              .nullable()
+              .transform(value => (Number.isNaN(value) ? null : value)),
+            capacityDist: Yup.string().required(),
+            minBytes: Yup.number().min(0).required(),
+            maxBytes: Yup.number()
+              .min(Yup.ref('minBytes') as unknown as number)
+              .required(),
+            mtu: Yup.number().min(1).required(),
+            dataTypes: Yup.string(),
+          })}
+          onSubmit={values => {
+            const seedValue =
+              values.seed === '' || values.seed === null
+                ? undefined
+                : Number(values.seed)
+            const parsedDataTypes = values.dataTypes
+              .split(',')
+              .map(part => Number(part.trim()))
+              .filter(num => Number.isInteger(num) && num > 0)
+            const nextParams = { ...model.traffic.capacity.params }
+            nextParams.minBytes = Number(values.minBytes)
+            nextParams.maxBytes = Number(values.maxBytes)
+
+            const nextModel: ModelConfig = {
+              model: { id: values.modelId.trim() || model.model.id },
+              sim: { duration: Number(values.duration) },
+              time: values.timeUnit ? { unit: values.timeUnit } : undefined,
+              rng: seedValue !== undefined ? { seed: seedValue } : undefined,
+              traffic: {
+                capacity: {
+                  dist: values.capacityDist || model.traffic.capacity.dist,
+                  params: nextParams,
+                },
+              },
+              packet: { mtu: Number(values.mtu) },
+              dataTypes: parsedDataTypes.length > 0 ? parsedDataTypes : undefined,
+            }
+
+            dispatch(setModel(nextModel))
+            toast.success('Глобальные настройки сохранены')
+          }}
+        >
+          {({ values, setFieldValue }) => (
+            <Form className="flex flex-col gap-2 min-w-[360px]">
+              <label className="text-sm">ID модели</label>
+              <Field name="modelId" className="border rounded p-1" />
+              <label className="text-sm">Длительность моделирования (sim.duration)</label>
+              <Field name="duration" type="number" className="border rounded p-1" />
+              <label className="text-sm">Единица времени (time.unit)</label>
+              <Field name="timeUnit" className="border rounded p-1" />
+              <label className="text-sm">Seed ГСЧ (rng.seed)</label>
+              <Field name="seed" type="number" className="border rounded p-1" />
+              <label className="text-sm">Распределение traffic.capacity.dist</label>
+              <Field name="capacityDist" className="border rounded p-1" />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm">minBytes</label>
+                  <Field name="minBytes" type="number" className="border rounded p-1" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm">maxBytes</label>
+                  <Field name="maxBytes" type="number" className="border rounded p-1" />
+                </div>
+              </div>
+              <label className="text-sm">MTU пакета (packet.mtu)</label>
+              <Field name="mtu" type="number" className="border rounded p-1" />
+              <label className="text-sm">Допустимые типы данных (через запятую)</label>
+              <input
+                name="dataTypes"
+                className="border rounded p-1"
+                value={values.dataTypes}
+                onChange={event => setFieldValue('dataTypes', event.target.value)}
+              />
+              <div className="flex justify-end gap-2 mt-4">
+                <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded">
+                  Сохранить
+                </button>
+              </div>
+            </Form>
+          )}
+        </Formik>
+      </div>
+    )
+  }
 
   if (node) {
     const type = node.type || ''
+    if (type === 'as' || type === 'ssop') {
+      const generatorDefaults =
+        (node.data?.generator as GeneratorConfig | undefined) ??
+        createDefaultGenerator(type) ?? {
+          lambda: 1,
+          typeData: type === 'ssop' ? 2 : 1,
+          capacitySource: 'capacity' as const,
+          target: { nodeId: '', inPortId: '', inPortIdx: null },
+        }
+
+      const initialValues: GeneratorFormValues = {
+        label: node.data?.label || '',
+        lat: node.data?.lat ?? 0,
+        lon: node.data?.lon ?? 0,
+        lambda: generatorDefaults.lambda,
+        typeData: generatorDefaults.typeData,
+        capacitySource: generatorDefaults.capacitySource ?? 'capacity',
+        targetNodeId: generatorDefaults.target?.nodeId ?? '',
+        targetInPortId: generatorDefaults.target?.inPortId ?? '',
+        targetInPortIdx:
+          typeof generatorDefaults.target?.inPortIdx === 'number'
+            ? generatorDefaults.target!.inPortIdx!
+            : null,
+      }
+
+      const schema = Yup.object({
+        label: Yup.string().required(),
+        lat: Yup.number().min(0).max(180).required(),
+        lon: Yup.number().min(0).max(360).required(),
+        lambda: Yup.number().moreThan(0).required(),
+        typeData: Yup.number().min(1).integer().required(),
+        capacitySource: Yup.mixed<'capacity' | 'custom'>()
+          .oneOf(['capacity', 'custom'])
+          .required(),
+        targetNodeId: Yup.string().required('Укажите целевой узел'),
+        targetInPortId: Yup.string(),
+        targetInPortIdx: Yup.number()
+          .min(1)
+          .integer()
+          .nullable()
+          .transform(value => (Number.isNaN(value) ? null : value))
+          .test('port-ref', 'Укажите ID или индекс порта', function (value) {
+            const { targetInPortId } = this.parent as GeneratorFormValues
+            const portId = targetInPortId?.trim?.() ?? ''
+            const idxValid = typeof value === 'number' && value > 0
+            return portId.length > 0 || idxValid
+          }),
+      })
+
+      const availableTargets = nodes.filter(n => n.id !== node.id)
+
+      return (
+        <div
+          className="bg-white border-l px-4 py-6 overflow-auto"
+          data-testid="properties-panel"
+        >
+          <div className="font-semibold mb-4">
+            {typeNames[node.type || '']} • {node.id}
+          </div>
+          <Formik<GeneratorFormValues>
+            initialValues={initialValues}
+            enableReinitialize
+            validationSchema={schema}
+            onSubmit={values => {
+              const lat = Number(values.lat)
+              const lon = Number(values.lon)
+              const position = latLonToPos(lat, lon)
+              const baseData = { ...(node.data ?? {}) } as any
+              baseData.label = values.label
+              baseData.lat = lat
+              baseData.lon = lon
+              baseData.generator = {
+                lambda: Number(values.lambda),
+                typeData: Math.max(1, Math.floor(Number(values.typeData))),
+                capacitySource: values.capacitySource,
+                target: {
+                  nodeId: values.targetNodeId,
+                  inPortId: values.targetInPortId?.trim() || undefined,
+                  inPortIdx:
+                    typeof values.targetInPortIdx === 'number'
+                      ? Math.max(1, Math.floor(values.targetInPortIdx))
+                      : undefined,
+                },
+              }
+
+              const updatedNodes = nodes.map(n =>
+                n.id === node.id
+                  ? {
+                      ...node,
+                      position,
+                      data: baseData,
+                    }
+                  : n
+              )
+              const nodesWithLabels = updateConnectedLabels(
+                updatedNodes,
+                node.id,
+                values.label
+              )
+              const updatedEdges = updateEdgesDistances(nodesWithLabels, edges)
+              dispatch(setElements({ nodes: nodesWithLabels, edges: updatedEdges }))
+              dispatch(select(null))
+              toast.success('Свойства сохранены')
+            }}
+          >
+            {({ values, setFieldValue, errors }) => (
+              <Form className="flex flex-col gap-2 min-w-[360px]">
+                <NodePositionUpdater node={node} />
+                <label className="text-sm">Метка</label>
+                <Field name="label" className="border rounded p-1" />
+                <label className="text-sm">Широта</label>
+                <Field name="lat" type="number" className="border rounded p-1" />
+                <label className="text-sm">Долгота</label>
+                <Field name="lon" type="number" className="border rounded p-1" />
+                <div className="flex flex-col gap-1">
+                  <LabelWithTooltip
+                    htmlFor="lambda"
+                    text="Интенсивность потока (λ)"
+                    tooltip="Среднее число заявок в единицу времени. Используется в GENERATE."
+                  />
+                  <Field
+                    name="lambda"
+                    type="number"
+                    min={0}
+                    step="any"
+                    className="border rounded p-1"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <LabelWithTooltip
+                    htmlFor="typeData"
+                    text="Тип данных (type_data)"
+                    tooltip="Значение поля type_data, присваиваемое заявкам."
+                  />
+                  <Field
+                    name="typeData"
+                    type="number"
+                    min={1}
+                    className="border rounded p-1"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <LabelWithTooltip
+                    text="Источник ёмкости"
+                    tooltip="Определяет, брать ли размер сообщения из глобального распределения или задавать своё."
+                  />
+                  <select
+                    name="capacitySource"
+                    className="border rounded p-1"
+                    value={values.capacitySource}
+                    onChange={event =>
+                      setFieldValue(
+                        'capacitySource',
+                        event.target.value as 'capacity' | 'custom'
+                      )
+                    }
+                  >
+                    <option value="capacity">Использовать traffic.capacity</option>
+                    <option value="custom">Пользовательское распределение</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <LabelWithTooltip
+                    text="Целевой узел"
+                    tooltip="Узел, на вход которого будут передаваться заявки."
+                  />
+                  <select
+                    name="targetNodeId"
+                    className="border rounded p-1"
+                    value={values.targetNodeId}
+                    onChange={event =>
+                      setFieldValue('targetNodeId', event.target.value)
+                    }
+                  >
+                    <option value="">— Не выбран —</option>
+                    {values.targetNodeId &&
+                      !availableTargets.some(target => target.id === values.targetNodeId) && (
+                        <option value={values.targetNodeId}>
+                          {values.targetNodeId} (недоступен)
+                        </option>
+                      )}
+                    {availableTargets.map(target => (
+                      <option key={target.id} value={target.id}>
+                        {target.data?.label || target.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <LabelWithTooltip
+                    htmlFor="targetInPortId"
+                    text="ID входящего порта"
+                    tooltip="Строковый идентификатор входящего интерфейса (in_intX_Node)."
+                  />
+                  <Field
+                    name="targetInPortId"
+                    id="targetInPortId"
+                    className="border rounded p-1"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <LabelWithTooltip
+                    htmlFor="targetInPortIdx"
+                    text="Индекс входа"
+                    tooltip="Номер входящего интерфейса (idx). Можно оставить пустым, если указан ID."
+                  />
+                  <Field
+                    name="targetInPortIdx"
+                    id="targetInPortIdx"
+                    type="number"
+                    min={1}
+                    className="border rounded p-1"
+                  />
+                  {typeof errors.targetInPortIdx === 'string' && (
+                    <div className="text-xs text-red-600">{errors.targetInPortIdx}</div>
+                  )}
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <button
+                    type="submit"
+                    className="px-3 py-1 bg-blue-500 text-white rounded"
+                  >
+                    Сохранить
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => dispatch(select(null))}
+                    className="px-3 py-1 border rounded"
+                  >
+                    Закрыть
+                  </button>
+                </div>
+              </Form>
+            )}
+          </Formik>
+        </div>
+      )
+    }
     const isSatellite = ['leo', 'meo', 'geo', 'haps'].includes(type)
     const isGround = type === 'gnd'
     const processingEnabled = hasProcessing(type)
@@ -627,7 +1012,8 @@ export default function PropertiesPanel() {
       serviceLines: normalizedProcessing.serviceLines,
       queue: normalizedProcessing.queue,
       mu: normalizedProcessing.mu,
-      routing: normalizedProcessing.routing,
+      dist: normalizedProcessing.dist ?? 'Exponential',
+      routingTable: normalizedProcessing.routingTable,
     }
 
     const schemaShape: Record<string, any> = {
@@ -652,7 +1038,8 @@ export default function PropertiesPanel() {
       schemaShape.serviceLines = Yup.number().min(1).integer().required()
       schemaShape.queue = Yup.number().min(0).integer().required()
       schemaShape.mu = Yup.number().moreThan(0).required()
-      schemaShape.routing = Yup.array()
+      schemaShape.dist = Yup.string().required()
+      schemaShape.routingTable = Yup.array()
         .of(
           Yup.object({
             type: Yup.number().min(1).integer().required(),
@@ -679,7 +1066,8 @@ export default function PropertiesPanel() {
             delete baseData.serviceLines
             delete baseData.queue
             delete baseData.mu
-            delete baseData.routing
+            delete baseData.routingTable
+            delete baseData.dist
 
             baseData.label = values.label
             baseData.lat = lat
@@ -702,7 +1090,8 @@ export default function PropertiesPanel() {
                 serviceLines: Number(values.serviceLines),
                 queue: Number(values.queue),
                 mu: Number(values.mu),
-                routing: values.routing,
+                dist: values.dist,
+                routingTable: values.routingTable,
               })
               const rawCode = (values.code ?? '').trim()
               if (rawCode) {
@@ -829,15 +1218,33 @@ export default function PropertiesPanel() {
                       onChange={event => setFieldValue('mu', Number(event.target.value))}
                     />
                   </div>
+                  <div className="flex flex-col gap-1">
+                    <LabelWithTooltip
+                      htmlFor="dist"
+                      text="Распределение обслуживания"
+                      tooltip="Определяет вид распределения времени обслуживания (для ADVANCE)."
+                    />
+                    <select
+                      id="dist"
+                      name="dist"
+                      className="border rounded p-1"
+                      value={values.dist}
+                      onChange={event => setFieldValue('dist', event.target.value)}
+                    >
+                      <option value="Exponential">Exponential</option>
+                      <option value="Deterministic">Deterministic</option>
+                      <option value="Uniform">Uniform</option>
+                    </select>
+                  </div>
                   <div className="space-y-2">
                     <LabelWithTooltip
                       text="Маршрутизация по типам данных"
                       tooltip="Сопоставляет type_data номеру выходного порта (out_int{idx})."
                     />
-                    <FieldArray name="routing">
+                    <FieldArray name="routingTable">
                       {arrayHelpers => {
-                        const routingValues = Array.isArray(values.routing)
-                          ? values.routing
+                        const routingValues = Array.isArray(values.routingTable)
+                          ? values.routingTable
                           : []
 
                         return (
@@ -863,19 +1270,19 @@ export default function PropertiesPanel() {
                                   <div className="flex flex-col gap-1">
                                     <label
                                       className="text-sm"
-                                      htmlFor={`routing-${index}-type`}
+                                      htmlFor={`routingTable-${index}-type`}
                                     >
                                       type_data
                                     </label>
                                     <input
-                                      id={`routing-${index}-type`}
+                                      id={`routingTable-${index}-type`}
                                       type="number"
                                       min={1}
                                       className="border rounded p-1 w-28"
                                       value={safeRoute?.type ?? ''}
                                       onChange={event =>
                                         setFieldValue(
-                                          `routing[${index}].type`,
+                                          `routingTable[${index}].type`,
                                           Math.max(
                                             1,
                                             Math.floor(Number(event.target.value))
@@ -887,19 +1294,19 @@ export default function PropertiesPanel() {
                                   <div className="flex flex-col gap-1">
                                     <label
                                       className="text-sm"
-                                      htmlFor={`routing-${index}-out`}
+                                      htmlFor={`routingTable-${index}-out`}
                                     >
                                       Выходной порт (idx)
                                     </label>
                                     <input
-                                      id={`routing-${index}-out`}
+                                      id={`routingTable-${index}-out`}
                                       type="number"
                                       min={1}
                                       className="border rounded p-1 w-32"
                                       value={safeRoute?.outPort ?? ''}
                                       onChange={event =>
                                         setFieldValue(
-                                          `routing[${index}].outPort`,
+                                          `routingTable[${index}].outPort`,
                                           Math.max(
                                             1,
                                             Math.floor(Number(event.target.value))
@@ -941,8 +1348,8 @@ export default function PropertiesPanel() {
                                   outPort: 1,
                                 }
 
-                                if (!Array.isArray(values.routing)) {
-                                  setFieldValue('routing', [newRule])
+                                if (!Array.isArray(values.routingTable)) {
+                                  setFieldValue('routingTable', [newRule])
                                 } else {
                                   arrayHelpers.push(newRule)
                                 }

@@ -38,8 +38,10 @@ import { ALTITUDE_RANGES } from '../utils/altitudes'
 import {
   addInterfaceToNode,
   createInterface,
+  LogicalNodeType,
   NodeData,
 } from '../utils/interfaces'
+import { createDefaultGenerator } from '../utils/generatorConfig'
 import {
   createDefaultProcessing,
   generateNodeCode,
@@ -58,10 +60,22 @@ const nodeTypes: NodeTypes = {
   geo: NetworkNode,
   gnd: NetworkNode,
   haps: NetworkNode,
+  as: NetworkNode,
+  ssop: NetworkNode,
 }
 
 const edgeTypes: EdgeTypes = {
   floating: FloatingEdge,
+}
+
+const NODE_LOGICAL_TYPE: Record<string, LogicalNodeType> = {
+  leo: 'SC',
+  meo: 'SC',
+  geo: 'SC',
+  haps: 'HAPS',
+  gnd: 'ES',
+  as: 'AS',
+  ssop: 'SSOP',
 }
 
 export default function Canvas() {
@@ -239,7 +253,15 @@ export default function Canvas() {
       })
       const id = `${type}-${Date.now()}`
       const { lat, lon } = posToLatLon(position)
-      const data: NodeData = { label: id, lat, lon, interfaces: [] }
+      const data: NodeData = {
+        label: id,
+        lat,
+        lon,
+        interfaces: [],
+      }
+      if (NODE_LOGICAL_TYPE[type]) {
+        data.nodeType = NODE_LOGICAL_TYPE[type]
+      }
       if (ALTITUDE_RANGES[type]) {
         data.altitude = ALTITUDE_RANGES[type].min
       }
@@ -247,6 +269,10 @@ export default function Canvas() {
         const code = generateNodeCode(type, nodes)
         if (code) data.code = code
         data.processing = createDefaultProcessing()
+      }
+      const generatorDefaults = createDefaultGenerator(type)
+      if (generatorDefaults) {
+        data.generator = generatorDefaults
       }
       dispatch(addNode({ id, type, position, data }))
       dispatch(setAddingType(null))

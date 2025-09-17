@@ -9,10 +9,12 @@ import {
 import type { NodeData, NodeInterface } from '../../utils/interfaces'
 import { NetworkState } from './types'
 import { prepareEdges } from '../../utils/edges'
+import { createDefaultModelConfig, ModelConfig } from '../../domain/types'
 
 const initialState: NetworkState = {
   nodes: [],
   edges: [],
+  model: createDefaultModelConfig(),
   topologyId: null,
   selectedId: null,
   addingType: null,
@@ -37,11 +39,13 @@ const networkSlice = createSlice({
       state,
       action: PayloadAction<{
         id: number
+        model?: ModelConfig
         nodes: Node<NodeData>[]
         edges: Edge[]
       }>
     ) {
       state.topologyId = action.payload.id
+      state.model = action.payload.model ?? createDefaultModelConfig()
       const normalizedNodes = action.payload.nodes.map(node => {
         const data = { ...(node.data ?? {}) }
         if (Array.isArray(data.interfaces)) {
@@ -58,6 +62,9 @@ const networkSlice = createSlice({
       state.nearby = null
       state.contextMenu = null
       state.interfacePopup = null
+    },
+    setModel(state, action: PayloadAction<ModelConfig>) {
+      state.model = action.payload
     },
     addNode(state, action: PayloadAction<Node<NodeData>>) {
       state.nodes.push(action.payload)
@@ -203,6 +210,7 @@ export const {
   removeElement,
   select,
   setAddingType,
+  setModel,
   openNearby,
   closeNearby,
   openNodeMenu,

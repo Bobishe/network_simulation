@@ -24,6 +24,20 @@ export interface NodeInterface {
   label?: string
   autoCleanup?: boolean
   distribution?: string
+  queue?: { q_in?: number; q_out?: number }
+  service?: {
+    mu_in?: number
+    mu_out?: number
+    servers_in?: number
+    servers_out?: number
+    dist_in?: string
+    dist_out?: string
+  }
+  nextHop?: {
+    nodeId?: string
+    inPortIdx?: number
+    terminal?: 'to_AS' | 'to_SSOP'
+  }
 }
 
 export interface RoutingRule {
@@ -31,11 +45,27 @@ export interface RoutingRule {
   outPort: number
 }
 
+export type LogicalNodeType = 'SC' | 'HAPS' | 'ES' | 'AS' | 'SSOP'
+
+export interface GeneratorTargetRef {
+  nodeId: string
+  inPortId?: string
+  inPortIdx?: number
+}
+
+export interface GeneratorConfig {
+  lambda: number
+  typeData: number
+  capacitySource?: 'capacity' | 'custom'
+  target: GeneratorTargetRef
+}
+
 export interface ProcessingConfig {
   serviceLines: number
   queue: number
   mu: number
-  routing: RoutingRule[]
+  dist?: string
+  routingTable: RoutingRule[]
 }
 
 export interface NodeData {
@@ -45,7 +75,9 @@ export interface NodeData {
   altitude?: number
   location?: string
   code?: string
+  nodeType?: LogicalNodeType
   processing?: ProcessingConfig
+  generator?: GeneratorConfig
   interfaces?: NodeInterface[]
   [key: string]: unknown
 }
@@ -116,6 +148,14 @@ export const createInterface = (
   const baseLabel =
     direction === 'out' ? 'Исходящий интерфейс' : 'Входящий интерфейс'
   const idx = count + 1
+  const queue = direction === 'in' ? { q_in: 0 } : { q_out: 0 }
+  const service =
+    direction === 'in'
+      ? { mu_in: 1, servers_in: 1, dist_in: 'Exponential' }
+      : { mu_out: 1, servers_out: 1, dist_out: 'Exponential' }
+  const nextHop =
+    direction === 'out'
+      ? { nodeId: connectedNode.id } : undefined
   return {
     id: createInterfaceId(),
     name: `${baseLabel} ${count + 1}`,
@@ -136,6 +176,9 @@ export const createInterface = (
     label: '',
     autoCleanup: false,
     distribution: 'Exponential',
+    queue,
+    service,
+    nextHop,
   }
 }
 
@@ -174,13 +217,36 @@ const normalizeInterfaceValue = (
         )
       : 1
 
+  const queueCapacity =
+    typeof iface.queueCapacity === 'number' && iface.queueCapacity >= 0
+      ? Math.floor(iface.queueCapacity)
+      : 0
+  const distribution = iface.distribution ?? 'Exponential'
+  const queue =
+    direction === 'in'
+      ? { q_in: queueCapacity }
+      : { q_out: queueCapacity }
+  const service =
+    direction === 'in'
+      ? {
+          mu_in: inferredServiceRate,
+          servers_in: resourceAmount,
+          dist_in: distribution,
+        }
+      : {
+          mu_out: inferredServiceRate,
+          servers_out: resourceAmount,
+          dist_out: distribution,
+        }
+  const nextHop =
+    direction === 'out'
+      ? iface.nextHop ?? { nodeId: iface.connectedNodeId }
+      : iface.nextHop
+
   return {
     ...iface,
     idx,
-    queueCapacity:
-      typeof iface.queueCapacity === 'number' && iface.queueCapacity >= 0
-        ? Math.floor(iface.queueCapacity)
-        : 0,
+    queueCapacity,
     speedMode,
     serviceRate: inferredServiceRate,
     serviceTime: inferredServiceTime,
@@ -188,7 +254,10 @@ const normalizeInterfaceValue = (
     resourceAmount,
     label: iface.label ?? '',
     autoCleanup: Boolean(iface.autoCleanup),
-    distribution: iface.distribution ?? 'Exponential',
+    distribution,
+    queue,
+    service,
+    nextHop,
   }
 }
 
@@ -237,6 +306,28 @@ export const ensureInterfacesForEdge = (
       connectedNode: sourceNode,
     })
     targetNode = addInterfaceToNode(targetNode, newInterface)
+  }
+
+  const targetInterface = getInterfaces(targetNode).find(
+    iface => iface.edgeId === edge.id && iface.direction === 'in'
+  )
+  if (targetInterface && typeof targetInterface.idx === 'number') {
+    const updatedInterfaces = getInterfaces(sourceNode).map(iface =>
+      iface.edgeId === edge.id && iface.direction === 'out'
+        ? {
+            ...iface,
+            nextHop: {
+              nodeId: targetNode.id,
+              inPortIdx: targetInterface.idx,
+              terminal: iface.nextHop?.terminal,
+            },
+          }
+        : iface
+    )
+    sourceNode = {
+      ...sourceNode,
+      data: { ...(sourceNode.data ?? {}), interfaces: updatedInterfaces },
+    }
   }
 
   const updated = [...nodes]

@@ -3,6 +3,7 @@ import {
   Node,
   NodeType,
   Topology,
+  createDefaultModelConfig,
   onConnect,
   removeEdge,
   exportTopology,
@@ -18,7 +19,11 @@ const makeNode = (id: string, type: NodeType): Node => ({
   outPorts: [],
 })
 
-const emptyTopology = (nodes: Node[]): Topology => ({ nodes, edges: [] })
+const emptyTopology = (nodes: Node[]): Topology => ({
+  model: createDefaultModelConfig(),
+  nodes,
+  edges: [],
+})
 
 describe('auto indexing and connection', () => {
   it('creates ports automatically and keeps indices stable', () => {
@@ -107,7 +112,8 @@ describe('edge removal cleanup', () => {
           dir: 'out',
           idx: 1,
           label: 'p1',
-          params: { q: 0, mu: 0 },
+          queue: { q_out: 0 },
+          service: { mu_out: 1 },
           persistent: false,
           locked: false,
         },
@@ -122,7 +128,8 @@ describe('edge removal cleanup', () => {
           dir: 'in',
           idx: 1,
           label: 'p2',
-          params: { q: 0, mu: 0 },
+          queue: { q_in: 0 },
+          service: { mu_in: 1 },
           persistent: false,
           locked: false,
         },

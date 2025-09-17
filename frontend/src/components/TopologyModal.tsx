@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { useAppDispatch } from '../hooks'
 import { setTopology } from '../features/network/networkSlice'
 import type { Node, Edge } from 'reactflow'
+import { createDefaultModelConfig, ModelConfig } from '../domain/types'
 
 interface Topology {
   id: number
   name: string
-  data: { nodes: Node[]; edges: Edge[] }
+  data: { model: ModelConfig; nodes: Node[]; edges: Edge[] }
   updated_at: string
 }
 
@@ -28,7 +29,12 @@ export default function TopologyModal({ onClose }: Props) {
 
   const handleSelect = (topology: Topology) => {
     dispatch(
-      setTopology({ id: topology.id, nodes: topology.data.nodes, edges: topology.data.edges })
+      setTopology({
+        id: topology.id,
+        model: topology.data.model ?? createDefaultModelConfig(),
+        nodes: topology.data.nodes,
+        edges: topology.data.edges,
+      })
     )
     onClose()
   }
@@ -38,12 +44,20 @@ export default function TopologyModal({ onClose }: Props) {
     const res = await fetch('/api/topologies', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, data: { nodes: [], edges: [] } }),
+      body: JSON.stringify({
+        name,
+        data: { model: createDefaultModelConfig(), nodes: [], edges: [] },
+      }),
     })
     if (res.ok) {
       const topology: Topology = await res.json()
       dispatch(
-        setTopology({ id: topology.id, nodes: topology.data.nodes, edges: topology.data.edges })
+        setTopology({
+          id: topology.id,
+          model: topology.data.model ?? createDefaultModelConfig(),
+          nodes: topology.data.nodes,
+          edges: topology.data.edges,
+        })
       )
       onClose()
     }

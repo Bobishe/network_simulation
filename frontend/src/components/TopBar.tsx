@@ -16,10 +16,12 @@ function FloppyDiskIcon(props: SVGProps<SVGSVGElement>) {
 
 export default function TopBar() {
   const dispatch = useAppDispatch()
-  const { nodes, edges, topologyId, addingType } = useAppSelector(state => state.network)
+  const { nodes, edges, model, topologyId, addingType } = useAppSelector(
+    state => state.network
+  )
 
   const handleDownload = () => {
-    const json = JSON.stringify({ nodes, edges }, null, 2)
+    const json = JSON.stringify({ model, nodes, edges }, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -34,7 +36,7 @@ export default function TopBar() {
     const res = await fetch(`/api/topologies/${topologyId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: { nodes, edges } }),
+      body: JSON.stringify({ data: { model, nodes, edges } }),
     })
     if (res.ok) {
       toast.success('Сохранено')
