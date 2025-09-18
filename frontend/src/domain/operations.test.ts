@@ -136,9 +136,16 @@ describe('edge removal cleanup', () => {
       ],
     }
     const topo: Topology = {
+      model: createDefaultModelConfig(),
       nodes: [a, b],
       edges: [
-        { id: 'e1', from: { nodeId: 'a', portId: 'p1' }, to: { nodeId: 'b', portId: 'p2' } },
+        {
+          id: 'e1',
+          from: { nodeId: 'a', portId: 'p1', outPortIdx: 1 },
+          to: { kind: 'node', nodeId: 'b', portId: 'p2', inPortIdx: 1 },
+          direction: 'uni',
+          muPolicy: 'manual',
+        },
       ],
     }
     const updated = removeEdge(topo, 'e1')

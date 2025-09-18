@@ -9,6 +9,7 @@ import {
 import type { NodeData, NodeInterface } from '../../utils/interfaces'
 import { NetworkState } from './types'
 import { prepareEdges } from '../../utils/edges'
+import { attachChannelData } from '../../utils/channels'
 import { createDefaultModelConfig, ModelConfig } from '../../domain/types'
 
 const initialState: NetworkState = {
@@ -54,7 +55,8 @@ const networkSlice = createSlice({
       }
 
       if (edgesChanged) {
-        state.edges = prepareEdges(edges)
+        const edgesWithChannel = attachChannelData(edges, nodes)
+        state.edges = prepareEdges(edgesWithChannel)
       }
     },
     setTopology(
@@ -78,8 +80,13 @@ const networkSlice = createSlice({
         return normalizeNodeInterfaces({ ...node, data })
       })
       const preparedEdges = prepareEdges(action.payload.edges)
-      state.nodes = ensureAllEdgeInterfaces(normalizedNodes, preparedEdges)
-      state.edges = preparedEdges
+      const nodesWithInterfaces = ensureAllEdgeInterfaces(
+        normalizedNodes,
+        preparedEdges
+      )
+      const edgesWithChannel = attachChannelData(preparedEdges, nodesWithInterfaces)
+      state.nodes = nodesWithInterfaces
+      state.edges = edgesWithChannel
       state.selectedId = null
       state.nearby = null
       state.contextMenu = null
