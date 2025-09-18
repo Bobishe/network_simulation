@@ -1,12 +1,11 @@
 import { Formik, Form, Field, FieldArray, useFormikContext } from 'formik'
 import { useEffect } from 'react'
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline'
-import type { Node } from 'reactflow'
+import type { Node, Edge as ReactFlowEdge } from 'reactflow'
 import * as Yup from 'yup'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
   updateNode,
-  updateEdge,
   select,
   setModel,
   setElements,
@@ -21,6 +20,7 @@ import {
   NodeInterface,
   GeneratorConfig,
   updateConnectedLabels,
+  ensureInterfacesForEdge,
 } from '../utils/interfaces'
 import {
   generateNodeCode,
@@ -28,8 +28,13 @@ import {
   normalizeProcessing,
 } from '../utils/nodeProcessing'
 import { createDefaultGenerator } from '../utils/generatorConfig'
+import {
+  ensureEdgeChannel,
+  estimateServiceRateFromPhysics,
+  type ChannelEdgeData,
+} from '../utils/channels'
 import toast from 'react-hot-toast'
-import type { ModelConfig } from '../domain/types'
+import type { ChannelConfig, ModelConfig } from '../domain/types'
 
 const typeNames: Record<string, string> = {
   leo: 'Низкая орбита',
@@ -96,6 +101,27 @@ interface GeneratorFormValues {
   targetNodeId: string
   targetInPortId: string
   targetInPortIdx: number | null
+}
+
+interface ChannelFormValues {
+  label: string
+  direction: 'uni' | 'bi'
+  toKind: 'node' | 'terminal'
+  toTerminal: 'to_AS' | 'to_SSOP'
+  fromNodeId: string
+  fromOutPortIdx: number
+  toNodeId: string
+  toInPortIdx: number | ''
+  bandwidth: number | ''
+  propDelay: number | ''
+  packetSize: number | ''
+  muPolicy: 'manual' | 'auto_from_physics'
+  linkDistType: '' | 'Exponential' | 'Deterministic' | 'Erlang' | 'Lognormal'
+  linkMu: number | ''
+  linkTMean: number | ''
+  linkLossProb: number | ''
+  linkMtbf: number | ''
+  linkMttr: number | ''
 }
 
 function LabelWithTooltip({
@@ -1389,48 +1415,759 @@ export default function PropertiesPanel() {
   }
 
   if (edge) {
-    const initialValues = {
-      label: (edge as any).label || '',
-      bandwidth: edge.data?.bandwidth || '',
-      latency: edge.data?.latency || '',
+    const channel = ensureEdgeChannel(edge as ReactFlowEdge<ChannelEdgeData>, nodes)
+    const sourceNode =
+      nodes.find(n => n.id === channel.from.nodeId) || nodes.find(n => n.id === edge.source)
+    const targetNode =
+      channel.to.kind === 'node'
+        ? nodes.find(n => n.id === channel.to.nodeId)
+        : nodes.find(n => n.id === edge.target)
+    const sourceLabel = sourceNode?.data?.label
+      ? String(sourceNode.data.label)
+      : sourceNode?.id ?? channel.from.nodeId
+    const targetLabel = targetNode?.data?.label
+      ? String(targetNode.data.label)
+      : targetNode?.id ?? (channel.to.kind === 'node' ? channel.to.nodeId : '')
+
+    const sourceInterfaces = Array.isArray(sourceNode?.data?.interfaces)
+      ? (sourceNode!.data!.interfaces as NodeInterface[])
+      : []
+    const targetInterfaces = Array.isArray(targetNode?.data?.interfaces)
+      ? (targetNode!.data!.interfaces as NodeInterface[])
+      : []
+
+    const outgoingInterface = sourceInterfaces.find(
+      iface => iface.edgeId === edge.id && iface.direction === 'out'
+    )
+    const incomingInterface = targetInterfaces.find(
+      iface => iface.edgeId === edge.id && iface.direction === 'in'
+    )
+
+    const initialValues: ChannelFormValues = {
+      label: channel.label ?? (typeof edge.label === 'string' ? edge.label : ''),
+      direction: channel.direction ?? 'uni',
+      toKind: channel.to.kind,
+      toTerminal:
+        channel.to.kind === 'terminal'
+          ? channel.to.terminal
+          : (outgoingInterface?.nextHop?.terminal ?? 'to_AS'),
+      fromNodeId: channel.from.nodeId,
+      fromOutPortIdx:
+        typeof channel.from.outPortIdx === 'number' && channel.from.outPortIdx > 0
+          ? channel.from.outPortIdx
+          : outgoingInterface?.idx ?? 1,
+      toNodeId:
+        channel.to.kind === 'node'
+          ? channel.to.nodeId
+          : targetNode?.id ?? (incomingInterface?.connectedNodeId ?? ''),
+      toInPortIdx:
+        channel.to.kind === 'node'
+          ? channel.to.inPortIdx ?? (incomingInterface?.idx ?? 1)
+          : incomingInterface?.idx ?? '',
+      bandwidth:
+        typeof channel.bandwidth === 'number' && Number.isFinite(channel.bandwidth)
+          ? channel.bandwidth
+          : '',
+      propDelay:
+        typeof channel.propDelay === 'number' && Number.isFinite(channel.propDelay)
+          ? channel.propDelay
+          : '',
+      packetSize:
+        typeof channel.packetSize === 'number' && Number.isFinite(channel.packetSize)
+          ? channel.packetSize
+          : '',
+      muPolicy: channel.muPolicy ?? 'manual',
+      linkDistType: channel.link?.distType ?? '',
+      linkMu:
+        typeof channel.link?.mu === 'number' && Number.isFinite(channel.link.mu)
+          ? channel.link.mu
+          : '',
+      linkTMean:
+        typeof channel.link?.tMean === 'number' && Number.isFinite(channel.link.tMean)
+          ? channel.link.tMean
+          : '',
+      linkLossProb:
+        typeof channel.link?.lossProb === 'number' && Number.isFinite(channel.link.lossProb)
+          ? channel.link.lossProb
+          : '',
+      linkMtbf:
+        typeof channel.link?.availability?.mtbf === 'number' &&
+        Number.isFinite(channel.link?.availability?.mtbf)
+          ? channel.link!.availability!.mtbf
+          : '',
+      linkMttr:
+        typeof channel.link?.availability?.mttr === 'number' &&
+        Number.isFinite(channel.link?.availability?.mttr)
+          ? channel.link!.availability!.mttr
+          : '',
     }
+
+    const directionTooltip =
+      'Определяет направление передачи. "uni" — односторонний канал, "bi" — дуплекс.'
+    const endpointTooltip =
+      'Приёмник может быть узлом диаграммы или GPSS-терминалом (to_AS / to_SSOP).'
+    const terminalTooltip =
+      'Используйте терминал, чтобы перенаправить поток напрямую в GPSS-блок to_AS или to_SSOP.'
+    const bandwidthTooltip =
+      'Пропускная способность канала в байтах в секунду. Используется для расчёта μ при авто-режиме.'
+    const propDelayTooltip =
+      'Задержка распространения сигнала в секундах. Учитывается при автоматическом расчёте μ.'
+    const packetSizeTooltip =
+      'Размер пакета в байтах. По умолчанию соответствует MTU модели (65535). ' +
+      'Используется при автоматическом расчёте μ.'
+    const muPolicyTooltip =
+      'Выберите способ задания μ исходящего порта: вручную или расчёт по физическим параметрам канала.'
+    const linkSectionTooltip =
+      'Дополнительные параметры задержки и потерь на линии. При заполнении будет создан отдельный GPSS-блок канала.'
+
+    const numberTransform = (value: unknown): number | undefined => {
+      if (typeof value === 'number' && Number.isFinite(value)) return value
+      if (typeof value === 'string' && value.trim() !== '') {
+        const parsed = Number(value)
+        return Number.isFinite(parsed) ? parsed : undefined
+      }
+      return undefined
+    }
+
+    const channelSchema = Yup.object({
+      label: Yup.string(),
+      direction: Yup.mixed<'uni' | 'bi'>().oneOf(['uni', 'bi']).required(),
+      toKind: Yup.mixed<'node' | 'terminal'>().oneOf(['node', 'terminal']).required(),
+      toTerminal: Yup.mixed<'to_AS' | 'to_SSOP'>()
+        .oneOf(['to_AS', 'to_SSOP'])
+        .when('toKind', {
+          is: 'terminal',
+          then: schema => schema.required('Укажите терминал-приёмник'),
+        }),
+      fromNodeId: Yup.string().required(),
+      fromOutPortIdx: Yup.number().min(1).required(),
+      toNodeId: Yup.string(),
+      toInPortIdx: Yup.number()
+        .transform((value, originalValue) =>
+          originalValue === '' || originalValue === null ? undefined : value
+        )
+        .when('toKind', {
+          is: 'node',
+          then: schema => schema.min(1).required('Укажите входной порт приёмника'),
+        }),
+      muPolicy: Yup.mixed<'manual' | 'auto_from_physics'>()
+        .oneOf(['manual', 'auto_from_physics'])
+        .required(),
+      bandwidth: Yup.number()
+        .transform((value, originalValue) =>
+          originalValue === '' || originalValue === null ? undefined : value
+        )
+        .nullable()
+        .when('muPolicy', {
+          is: 'auto_from_physics',
+          then: schema => schema.moreThan(0, 'Укажите пропускную способность').required(),
+        }),
+      propDelay: Yup.number()
+        .transform((value, originalValue) =>
+          originalValue === '' || originalValue === null ? undefined : value
+        )
+        .nullable()
+        .min(0, 'Задержка не может быть отрицательной'),
+      packetSize: Yup.number()
+        .transform((value, originalValue) =>
+          originalValue === '' || originalValue === null ? undefined : value
+        )
+        .nullable()
+        .when('muPolicy', {
+          is: 'auto_from_physics',
+          then: schema => schema.moreThan(0, 'Укажите размер пакета').required(),
+        }),
+      linkDistType: Yup.mixed<'' | 'Exponential' | 'Deterministic' | 'Erlang' | 'Lognormal'>()
+        .oneOf(['', 'Exponential', 'Deterministic', 'Erlang', 'Lognormal']),
+      linkMu: Yup.number()
+        .transform((value, originalValue) =>
+          originalValue === '' || originalValue === null ? undefined : value
+        )
+        .nullable()
+        .min(0, 'μ должно быть положительным'),
+      linkTMean: Yup.number()
+        .transform((value, originalValue) =>
+          originalValue === '' || originalValue === null ? undefined : value
+        )
+        .nullable()
+        .min(0, 'Среднее время должно быть положительным'),
+      linkLossProb: Yup.number()
+        .transform((value, originalValue) =>
+          originalValue === '' || originalValue === null ? undefined : value
+        )
+        .nullable()
+        .min(0, 'Вероятность не может быть отрицательной')
+        .max(1, 'Вероятность не может превышать 1'),
+      linkMtbf: Yup.number()
+        .transform((value, originalValue) =>
+          originalValue === '' || originalValue === null ? undefined : value
+        )
+        .nullable()
+        .moreThan(0, 'MTBF должен быть больше нуля'),
+      linkMttr: Yup.number()
+        .transform((value, originalValue) =>
+          originalValue === '' || originalValue === null ? undefined : value
+        )
+        .nullable()
+        .moreThan(0, 'MTTR должен быть больше нуля'),
+    })
+
     return (
       <div className="bg-white border-l px-4 py-6 overflow-auto" data-testid="properties-panel">
-        <div className="font-semibold mb-4">СВЯЗЬ • {edge.id}</div>
-        <Formik
+        <div className="font-semibold mb-4">КАНАЛ • {edge.id}</div>
+        <Formik<ChannelFormValues>
           initialValues={initialValues}
           enableReinitialize
-          validationSchema={Yup.object({
-            bandwidth: Yup.number().required(),
-            latency: Yup.number().required(),
-            label: Yup.string(),
-          })}
+          validationSchema={channelSchema}
           onSubmit={values => {
-            dispatch(
-              updateEdge({
-                ...edge,
-                label: values.label,
-                data: { ...edge.data, bandwidth: values.bandwidth, latency: values.latency },
-              })
+            const trimmedLabel = values.label.trim()
+            const bandwidthValue = numberTransform(values.bandwidth)
+            const propDelayValue = numberTransform(values.propDelay)
+            const packetSizeValue = numberTransform(values.packetSize)
+            const linkMuValue = numberTransform(values.linkMu)
+            const linkTMeanValue = numberTransform(values.linkTMean)
+            const linkLossProbValue = numberTransform(values.linkLossProb)
+            const linkMtbfValue = numberTransform(values.linkMtbf)
+            const linkMttrValue = numberTransform(values.linkMttr)
+
+            const availability =
+              linkMtbfValue !== undefined && linkMttrValue !== undefined
+                ? { mtbf: linkMtbfValue, mttr: linkMttrValue }
+                : undefined
+
+            const linkConfig =
+              values.linkDistType ||
+              linkMuValue !== undefined ||
+              linkTMeanValue !== undefined ||
+              linkLossProbValue !== undefined ||
+              availability
+                ? {
+                    distType: values.linkDistType || undefined,
+                    mu: linkMuValue,
+                    tMean: linkTMeanValue,
+                    lossProb: linkLossProbValue,
+                    availability,
+                  }
+                : undefined
+
+            let nextTo: ChannelConfig['to']
+            if (values.toKind === 'terminal') {
+              nextTo = {
+                kind: 'terminal',
+                terminal: values.toTerminal,
+              }
+            } else {
+              const nodeId = values.toNodeId || (channel.to.kind === 'node' ? channel.to.nodeId : '')
+              const inIdx =
+                typeof values.toInPortIdx === 'number' && Number.isFinite(values.toInPortIdx)
+                  ? values.toInPortIdx
+                  : channel.to.kind === 'node'
+                  ? channel.to.inPortIdx
+                  : incomingInterface?.idx ?? 1
+              const portId =
+                channel.to.kind === 'node' ? channel.to.portId : incomingInterface?.id
+              nextTo = {
+                kind: 'node',
+                nodeId,
+                inPortIdx: inIdx ?? 1,
+                portId,
+              }
+            }
+
+            const nextChannel: ChannelConfig = {
+              ...channel,
+              label: trimmedLabel || undefined,
+              direction: values.direction,
+              muPolicy: values.muPolicy,
+              bandwidth: bandwidthValue,
+              propDelay: propDelayValue,
+              packetSize: packetSizeValue,
+              from: {
+                ...channel.from,
+                nodeId: values.fromNodeId || channel.from.nodeId,
+                outPortIdx:
+                  typeof values.fromOutPortIdx === 'number' && values.fromOutPortIdx > 0
+                    ? values.fromOutPortIdx
+                    : channel.from.outPortIdx,
+              },
+              to: nextTo,
+              link: linkConfig,
+            }
+
+            const updatedEdge: ReactFlowEdge<ChannelEdgeData> = {
+              ...edge,
+              label: trimmedLabel || undefined,
+              data: {
+                ...(edge.data ?? {}),
+                channel: nextChannel,
+              },
+            }
+
+            let updatedNodes = ensureInterfacesForEdge(nodes, updatedEdge)
+
+            if (values.muPolicy === 'auto_from_physics' && bandwidthValue && packetSizeValue) {
+              const estimatedMu = estimateServiceRateFromPhysics(
+                bandwidthValue,
+                packetSizeValue,
+                propDelayValue
+              )
+              if (estimatedMu && estimatedMu > 0) {
+                updatedNodes = updatedNodes.map(node => {
+                  if (node.id !== nextChannel.from.nodeId) return node
+                  if (!node.data || !Array.isArray(node.data.interfaces)) return node
+                  const interfaces = (node.data.interfaces as NodeInterface[]).map(iface => {
+                    if (iface.edgeId !== edge.id || iface.direction !== 'out') return iface
+                    const serviceRate = estimatedMu
+                    const serviceTime = serviceRate > 0 ? 1 / serviceRate : iface.serviceTime
+                    const serversOut =
+                      typeof iface.service?.servers_out === 'number' && iface.service.servers_out > 0
+                        ? iface.service.servers_out
+                        : iface.resourceType === 'STORAGE'
+                        ? Math.max(1, iface.resourceAmount ?? 1)
+                        : 1
+                    return {
+                      ...iface,
+                      speedMode: 'rate',
+                      serviceRate,
+                      serviceTime,
+                      service: {
+                        ...(iface.service ?? {}),
+                        mu_out: serviceRate,
+                        dist_out: iface.service?.dist_out ?? 'Exponential',
+                        servers_out: serversOut,
+                      },
+                    }
+                  })
+                  return {
+                    ...node,
+                    data: { ...(node.data ?? {}), interfaces },
+                  }
+                })
+              }
+            }
+
+            const updatedEdges = edges.map(existing =>
+              existing.id === edge.id ? updatedEdge : existing
             )
+
+            dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
             dispatch(select(null))
-            toast.success('Свойства сохранены')
+            toast.success('Свойства канала сохранены')
           }}
         >
-          {() => (
-            <Form className="flex flex-col gap-2">
-              <label className="text-sm">Метка</label>
-              <Field name="label" className="border rounded p-1" />
-              <label className="text-sm">Пропускная способность (Мбит/с)</label>
-              <Field name="bandwidth" type="number" className="border rounded p-1" />
-              <label className="text-sm">Задержка (мс)</label>
-              <Field name="latency" type="number" className="border rounded p-1" />
-              <div className="flex justify-end gap-2 mt-4">
-                <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded">Сохранить</button>
-                <button type="button" onClick={() => dispatch(select(null))} className="px-3 py-1 border rounded">Закрыть</button>
-              </div>
-            </Form>
-          )}
+          {({ values, setFieldValue }) => {
+            const bandwidthValue =
+              typeof values.bandwidth === 'number' && Number.isFinite(values.bandwidth)
+                ? values.bandwidth
+                : undefined
+            const propDelayValue =
+              typeof values.propDelay === 'number' && Number.isFinite(values.propDelay)
+                ? values.propDelay
+                : undefined
+            const packetSizeValue =
+              typeof values.packetSize === 'number' && Number.isFinite(values.packetSize)
+                ? values.packetSize
+                : undefined
+            const muPreview =
+              values.muPolicy === 'auto_from_physics'
+                ? estimateServiceRateFromPhysics(
+                    bandwidthValue ?? channel.bandwidth,
+                    packetSizeValue ?? channel.packetSize,
+                    propDelayValue ?? channel.propDelay
+                  )
+                : null
+
+            const sourcePortLabel = `out_int${values.fromOutPortIdx}_${values.fromNodeId}`
+            const targetPortLabel =
+              values.toKind === 'node'
+                ? `in_int${
+                    typeof values.toInPortIdx === 'number'
+                      ? values.toInPortIdx
+                      : initialValues.toInPortIdx || 1
+                  }_${values.toNodeId || initialValues.toNodeId}`
+                : values.toTerminal
+
+            return (
+              <Form className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 gap-2 text-sm bg-gray-50 border rounded p-3">
+                  <div className="flex flex-col">
+                    <span className="font-medium">Источник</span>
+                    <span className="text-gray-600">{sourceLabel}</span>
+                    <span className="text-gray-500">{sourcePortLabel}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-medium">Приёмник</span>
+                    <span className="text-gray-600">
+                      {values.toKind === 'terminal'
+                        ? values.toTerminal === 'to_AS'
+                          ? 'Терминал AS'
+                          : 'Терминал SSOP'
+                        : targetLabel}
+                    </span>
+                    <span className="text-gray-500">{targetPortLabel}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <LabelWithTooltip
+                    htmlFor="label"
+                    text="Подпись на диаграмме"
+                    tooltip="Отображается рядом с ребром. На GPSS-код не влияет."
+                  />
+                  <Field id="label" name="label" className="border rounded p-1" />
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                  <div className="flex flex-col gap-1">
+                    <LabelWithTooltip
+                      htmlFor="direction"
+                      text="Направление"
+                      tooltip={directionTooltip}
+                    />
+                    <select
+                      id="direction"
+                      name="direction"
+                      className="border rounded p-1"
+                      value={values.direction}
+                      onChange={event =>
+                        setFieldValue('direction', event.target.value as 'uni' | 'bi')
+                      }
+                    >
+                      <option value="uni">uni</option>
+                      <option value="bi">bi</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <LabelWithTooltip text="Тип приёмника" tooltip={endpointTooltip} />
+                    <div className="flex gap-3 text-sm">
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="radio"
+                          name="toKind"
+                          value="node"
+                          checked={values.toKind === 'node'}
+                          onChange={() => setFieldValue('toKind', 'node')}
+                        />
+                        Узел
+                      </label>
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="radio"
+                          name="toKind"
+                          value="terminal"
+                          checked={values.toKind === 'terminal'}
+                          onChange={() => setFieldValue('toKind', 'terminal')}
+                        />
+                        Терминал
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {values.toKind === 'terminal' ? (
+                  <div className="flex flex-col gap-1">
+                    <LabelWithTooltip
+                      htmlFor="toTerminal"
+                      text="Терминал"
+                      tooltip={terminalTooltip}
+                    />
+                    <select
+                      id="toTerminal"
+                      name="toTerminal"
+                      className="border rounded p-1"
+                      value={values.toTerminal}
+                      onChange={event =>
+                        setFieldValue('toTerminal', event.target.value as 'to_AS' | 'to_SSOP')
+                      }
+                    >
+                      <option value="to_AS">to_AS</option>
+                      <option value="to_SSOP">to_SSOP</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <div className="flex flex-col gap-1">
+                      <LabelWithTooltip
+                        htmlFor="toNodeId"
+                        text="ID узла-приёмника"
+                        tooltip="Определяется выбранным узлом на диаграмме."
+                      />
+                      <input
+                        id="toNodeId"
+                        name="toNodeId"
+                        className="border rounded p-1 bg-gray-100"
+                        value={values.toNodeId}
+                        readOnly
+                        disabled
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <LabelWithTooltip
+                        htmlFor="toInPortIdx"
+                        text="Номер входного порта"
+                        tooltip="Используется при генерации in_int{idx}_{nodeId}."
+                      />
+                      <input
+                        id="toInPortIdx"
+                        name="toInPortIdx"
+                        type="number"
+                        min={1}
+                        className="border rounded p-1 bg-gray-100"
+                        value={values.toInPortIdx}
+                        readOnly
+                        disabled
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t pt-3 space-y-3">
+                  <div className="text-sm font-semibold">Физические параметры</div>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                    <div className="flex flex-col gap-1">
+                      <LabelWithTooltip
+                        htmlFor="bandwidth"
+                        text="Пропускная способность, байт/с"
+                        tooltip={bandwidthTooltip}
+                      />
+                      <input
+                        id="bandwidth"
+                        name="bandwidth"
+                        type="number"
+                        min={0}
+                        className="border rounded p-1"
+                        value={values.bandwidth}
+                        onChange={event => {
+                          const value = event.target.value
+                          setFieldValue('bandwidth', value === '' ? '' : Number(value))
+                        }}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <LabelWithTooltip
+                        htmlFor="propDelay"
+                        text="Задержка распространения, с"
+                        tooltip={propDelayTooltip}
+                      />
+                      <input
+                        id="propDelay"
+                        name="propDelay"
+                        type="number"
+                        min={0}
+                        step="0.0001"
+                        className="border rounded p-1"
+                        value={values.propDelay}
+                        onChange={event => {
+                          const value = event.target.value
+                          setFieldValue('propDelay', value === '' ? '' : Number(value))
+                        }}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <LabelWithTooltip
+                        htmlFor="packetSize"
+                        text="Размер пакета, байт"
+                        tooltip={packetSizeTooltip}
+                      />
+                      <input
+                        id="packetSize"
+                        name="packetSize"
+                        type="number"
+                        min={0}
+                        className="border rounded p-1"
+                        value={values.packetSize}
+                        onChange={event => {
+                          const value = event.target.value
+                          setFieldValue('packetSize', value === '' ? '' : Number(value))
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <LabelWithTooltip text="Политика μ" tooltip={muPolicyTooltip} />
+                    <div className="flex gap-4 text-sm">
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="radio"
+                          name="muPolicy"
+                          value="manual"
+                          checked={values.muPolicy === 'manual'}
+                          onChange={() => setFieldValue('muPolicy', 'manual')}
+                        />
+                        manual
+                      </label>
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="radio"
+                          name="muPolicy"
+                          value="auto_from_physics"
+                          checked={values.muPolicy === 'auto_from_physics'}
+                          onChange={() => setFieldValue('muPolicy', 'auto_from_physics')}
+                        />
+                        auto_from_physics
+                      </label>
+                    </div>
+                    {values.muPolicy === 'auto_from_physics' && muPreview ? (
+                      <div className="text-xs text-gray-600">
+                        μ ≈ {muPreview.toFixed(6)} (t ≈ {(1 / muPreview).toFixed(6)} с)
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="border-t pt-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold">Link-параметры</div>
+                    <QuestionMarkCircleIcon
+                      className="w-4 h-4 text-gray-400"
+                      title={linkSectionTooltip}
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <div className="flex flex-col gap-1">
+                      <LabelWithTooltip
+                        htmlFor="linkDistType"
+                        text="Распределение"
+                        tooltip="Тип распределения задержки в блоке канала."
+                      />
+                      <select
+                        id="linkDistType"
+                        name="linkDistType"
+                        className="border rounded p-1"
+                        value={values.linkDistType}
+                        onChange={event =>
+                          setFieldValue(
+                            'linkDistType',
+                            event.target.value as '' | 'Exponential' | 'Deterministic' | 'Erlang' | 'Lognormal'
+                          )
+                        }
+                      >
+                        <option value="">Не задано</option>
+                        <option value="Exponential">Exponential</option>
+                        <option value="Deterministic">Deterministic</option>
+                        <option value="Erlang">Erlang</option>
+                        <option value="Lognormal">Lognormal</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <LabelWithTooltip
+                        htmlFor="linkLossProb"
+                        text="Вероятность потери"
+                        tooltip="Вероятность потери заявки на линии (0..1)."
+                      />
+                      <input
+                        id="linkLossProb"
+                        name="linkLossProb"
+                        type="number"
+                        min={0}
+                        max={1}
+                        step="0.01"
+                        className="border rounded p-1"
+                        value={values.linkLossProb}
+                        onChange={event => {
+                          const value = event.target.value
+                          setFieldValue('linkLossProb', value === '' ? '' : Number(value))
+                        }}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <LabelWithTooltip
+                        htmlFor="linkMu"
+                        text="μ для канала"
+                        tooltip="Параметр μ для блока ADVANCE канала."
+                      />
+                      <input
+                        id="linkMu"
+                        name="linkMu"
+                        type="number"
+                        min={0}
+                        className="border rounded p-1"
+                        value={values.linkMu}
+                        onChange={event => {
+                          const value = event.target.value
+                          setFieldValue('linkMu', value === '' ? '' : Number(value))
+                        }}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <LabelWithTooltip
+                        htmlFor="linkTMean"
+                        text="Среднее время, с"
+                        tooltip="Среднее время задержки для блока канала."
+                      />
+                      <input
+                        id="linkTMean"
+                        name="linkTMean"
+                        type="number"
+                        min={0}
+                        className="border rounded p-1"
+                        value={values.linkTMean}
+                        onChange={event => {
+                          const value = event.target.value
+                          setFieldValue('linkTMean', value === '' ? '' : Number(value))
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <div className="flex flex-col gap-1">
+                      <LabelWithTooltip
+                        htmlFor="linkMtbf"
+                        text="MTBF, с"
+                        tooltip="Среднее время безотказной работы канала."
+                      />
+                      <input
+                        id="linkMtbf"
+                        name="linkMtbf"
+                        type="number"
+                        min={0}
+                        className="border rounded p-1"
+                        value={values.linkMtbf}
+                        onChange={event => {
+                          const value = event.target.value
+                          setFieldValue('linkMtbf', value === '' ? '' : Number(value))
+                        }}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <LabelWithTooltip
+                        htmlFor="linkMttr"
+                        text="MTTR, с"
+                        tooltip="Среднее время восстановления канала."
+                      />
+                      <input
+                        id="linkMttr"
+                        name="linkMttr"
+                        type="number"
+                        min={0}
+                        className="border rounded p-1"
+                        value={values.linkMttr}
+                        onChange={event => {
+                          const value = event.target.value
+                          setFieldValue('linkMttr', value === '' ? '' : Number(value))
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 mt-4">
+                  <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded">
+                    Сохранить
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => dispatch(select(null))}
+                    className="px-3 py-1 border rounded"
+                  >
+                    Закрыть
+                  </button>
+                </div>
+              </Form>
+            )
+          }}
         </Formik>
       </div>
     )

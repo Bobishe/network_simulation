@@ -42,6 +42,7 @@ import {
   LogicalNodeType,
   NodeData,
 } from '../utils/interfaces'
+import type { Edge as ChannelConfig } from '../domain/types'
 import { createDefaultGenerator } from '../utils/generatorConfig'
 import {
   createDefaultProcessing,
@@ -117,12 +118,53 @@ export default function Canvas() {
         )
       }
 
+      const outgoingInterface = createInterface({
+        node: sourceNode,
+        direction: 'out',
+        edgeId,
+        connectedNode: targetNode,
+      })
+      const sourceWithInterface = addInterfaceToNode(
+        sourceNode,
+        outgoingInterface
+      )
+
+      const updatedSource =
+        sourceNode.className === 'ring-2 ring-blue-500'
+          ? { ...sourceWithInterface, className: undefined }
+          : { ...sourceWithInterface, className: sourceNode.className }
+
+      const incomingInterface = createInterface({
+        node: targetNode,
+        direction: 'in',
+        edgeId,
+        connectedNode: sourceNode,
+      })
+      const updatedTarget = addInterfaceToNode(targetNode, incomingInterface)
+
+      const channel: ChannelConfig = {
+        id: edgeId,
+        from: {
+          nodeId: sourceNode.id,
+          outPortIdx: outgoingInterface.idx ?? 1,
+          portId: outgoingInterface.id,
+        },
+        to: {
+          kind: 'node',
+          nodeId: targetNode.id,
+          inPortIdx: incomingInterface.idx ?? 1,
+          portId: incomingInterface.id,
+        },
+        direction: 'uni',
+        muPolicy: 'manual',
+      }
+
       const edge: Edge = {
         id: edgeId,
         source: sourceNode.id,
         target: targetNode.id,
         style: { stroke: 'black' },
-        data: { distance },
+        data: { distance, channel },
         label: `${Math.round(distance)} km`,
         markerEnd: {
           type: MarkerType.ArrowClosed,
@@ -131,31 +173,6 @@ export default function Canvas() {
           height: 25,
         },
       }
-
-      const sourceWithInterface = addInterfaceToNode(
-        sourceNode,
-        createInterface({
-          node: sourceNode,
-          direction: 'out',
-          edgeId,
-          connectedNode: targetNode,
-        })
-      )
-
-      const updatedSource =
-        sourceNode.className === 'ring-2 ring-blue-500'
-          ? { ...sourceWithInterface, className: undefined }
-          : { ...sourceWithInterface, className: sourceNode.className }
-
-      const updatedTarget = addInterfaceToNode(
-        targetNode,
-        createInterface({
-          node: targetNode,
-          direction: 'in',
-          edgeId,
-          connectedNode: sourceNode,
-        })
-      )
 
       const updatedNodes = nodes.map(node => {
         if (node.id === updatedSource.id) return updatedSource

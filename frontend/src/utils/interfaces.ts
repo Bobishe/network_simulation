@@ -1,4 +1,5 @@
 import type { Edge, Node } from 'reactflow'
+import type { Edge as ChannelConfig } from '../domain/types'
 
 export type InterfaceDirection = 'in' | 'out'
 
@@ -311,15 +312,28 @@ export const ensureInterfacesForEdge = (
   const targetInterface = getInterfaces(targetNode).find(
     iface => iface.edgeId === edge.id && iface.direction === 'in'
   )
+  const channel = (edge.data?.channel ?? null) as ChannelConfig | null
+  const terminalHop = channel?.to.kind === 'terminal' ? channel.to.terminal : undefined
+  const channelToNodeId =
+    channel?.to.kind === 'node' ? channel.to.nodeId : targetNode.id
+  const channelToInIdx =
+    channel?.to.kind === 'node'
+      ? channel.to.inPortIdx ?? targetInterface?.idx
+      : targetInterface?.idx
   if (targetInterface && typeof targetInterface.idx === 'number') {
     const updatedInterfaces = getInterfaces(sourceNode).map(iface =>
       iface.edgeId === edge.id && iface.direction === 'out'
         ? {
             ...iface,
             nextHop: {
-              nodeId: targetNode.id,
-              inPortIdx: targetInterface.idx,
-              terminal: iface.nextHop?.terminal,
+              nodeId:
+                terminalHop === undefined ? channelToNodeId ?? targetNode.id : undefined,
+              inPortIdx:
+                terminalHop === undefined
+                  ? channelToInIdx ?? targetInterface.idx
+                  : undefined,
+              terminal:
+                terminalHop !== undefined ? terminalHop : iface.nextHop?.terminal,
             },
           }
         : iface

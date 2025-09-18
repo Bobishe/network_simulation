@@ -82,14 +82,34 @@ export interface Node {
   meta?: Record<string, unknown>
 }
 
-export interface EdgeEndpoint {
+export interface ChannelFromEndpoint {
   nodeId: string
-  portId: string
-  portIdx: number
+  outPortIdx: number
+  portId?: string
 }
 
-export interface EdgeLinkConfig {
-  distType?: string
+export interface ChannelToNodeEndpoint {
+  kind: 'node'
+  nodeId: string
+  inPortIdx: number
+  portId?: string
+}
+
+export interface ChannelToTerminalEndpoint {
+  kind: 'terminal'
+  terminal: 'to_AS' | 'to_SSOP'
+}
+
+export type ChannelToEndpoint =
+  | ChannelToNodeEndpoint
+  | ChannelToTerminalEndpoint
+
+export type ChannelDirection = 'uni' | 'bi'
+
+export type ChannelMuPolicy = 'auto_from_physics' | 'manual'
+
+export interface ChannelLinkConfig {
+  distType?: 'Exponential' | 'Deterministic' | 'Erlang' | 'Lognormal'
   mu?: number
   tMean?: number
   lossProb?: number
@@ -98,12 +118,15 @@ export interface EdgeLinkConfig {
 
 export interface Edge {
   id: string
-  from: EdgeEndpoint
-  to?: EdgeEndpoint
-  terminal?: 'to_AS' | 'to_SSOP'
-  direction?: 'uni' | 'bi'
+  from: ChannelFromEndpoint
+  to: ChannelToEndpoint
+  direction?: ChannelDirection
   label?: string
-  link?: EdgeLinkConfig
+  bandwidth?: number
+  propDelay?: number
+  packetSize?: number
+  muPolicy?: ChannelMuPolicy
+  link?: ChannelLinkConfig
   meta?: Record<string, unknown>
 }
 

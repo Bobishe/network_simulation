@@ -19,9 +19,11 @@ const getNextPortIdx = (node: Node, dir: PortDir): number => {
 }
 
 export const isPortFree = (topology: Topology, portId: string): boolean =>
-  !topology.edges.some(
-    (e) => e.from.portId === portId || (e.to && e.to.portId === portId)
-  )
+  !topology.edges.some((edge) => {
+    if (edge.from.portId === portId) return true
+    if (edge.to.kind === 'node' && edge.to.portId === portId) return true
+    return false
+  })
 
 const updatePort = (
   node: Node,
@@ -140,10 +142,10 @@ export const onConnect = (
 
   if (
     topology.edges.some(
-      (e) =>
-        e.from.portId === sourcePort.id &&
-        e.to &&
-        e.to.portId === targetPort!.id
+      (edge) =>
+        edge.from.portId === sourcePort.id &&
+        edge.to.kind === 'node' &&
+        edge.to.portId === targetPort!.id
     )
   ) {
     throw new Error('Duplicate edge')
@@ -157,14 +159,16 @@ export const onConnect = (
     from: {
       nodeId: sourceNode.id,
       portId: sourcePort.id,
-      portIdx: sourcePort.idx,
+      outPortIdx: sourcePort.idx,
     },
     to: {
+      kind: 'node',
       nodeId: targetNode.id,
       portId: targetPort.id,
-      portIdx: targetPort.idx,
+      inPortIdx: targetPort.idx,
     },
     direction: 'uni',
+    muPolicy: 'manual',
   }
 
   const nodes = topology.nodes.map((n) => {
@@ -203,8 +207,12 @@ export const removeEdge = (topology: Topology, edgeId: string): Topology => {
   }
 
   const nodes = topology.nodes.map((n) => {
-    if (n.id === edge.from.nodeId) return cleanPort(n, edge.from.portId)
-    if (edge.to && n.id === edge.to.nodeId) return cleanPort(n, edge.to.portId)
+    if (n.id === edge.from.nodeId && edge.from.portId) {
+      return cleanPort(n, edge.from.portId)
+    }
+    if (edge.to.kind === 'node' && edge.to.portId && n.id === edge.to.nodeId) {
+      return cleanPort(n, edge.to.portId)
+    }
     return n
   })
 
