@@ -9,6 +9,9 @@ import meoPng from '../img/meo.png'
 import geoPng from '../img/geo.png'
 import gndPng from '../img/gnd.png'
 import hapsPng from '../img/hasp.png'
+import AsIcon from "../img/as.png"
+import SsopIcon from "../img/ssop.png"
+
 
 const typeImages: Record<string, string> = {
   leo: leoPng,
@@ -16,6 +19,8 @@ const typeImages: Record<string, string> = {
   geo: geoPng,
   gnd: gndPng,
   haps: hapsPng,
+  as: AsIcon,
+  ssop: SsopIcon,
 }
 
 const hiddenHandleStyle: CSSProperties = {
