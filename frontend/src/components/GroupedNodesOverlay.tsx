@@ -4,7 +4,7 @@ import { select } from '../features/network/networkSlice'
 import leoPng from '../img/leo.png'
 import meoPng from '../img/meo.png'
 import geoPng from '../img/geo.png'
-import gndPng from '../img/gnd.png'
+import esPng from '../img/es.png'
 import hapsPng from '../img/hasp.png' 
 import classNames from 'classnames'
 
@@ -12,7 +12,7 @@ const typeIcons: Record<string, string> = {
   leo: leoPng,
   meo: meoPng,
   geo: geoPng,
-  gnd: gndPng,
+  es: esPng,
   haps: hapsPng,
 }
 

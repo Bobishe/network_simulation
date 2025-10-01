@@ -40,7 +40,7 @@ const typeNames: Record<string, string> = {
   leo: 'Низкая орбита',
   meo: 'Средняя орбита',
   geo: 'Геостационарная орбита',
-  gnd: 'Наземная станция',
+  es: 'Наземная станция',
   haps: 'Высотная платформа',
   as: 'Узел AS',
   ssop: 'Узел SSOP',
@@ -1032,8 +1032,8 @@ export default function PropertiesPanel() {
         </div>
       )
     }
-    const isSatellite = ['leo', 'meo', 'geo', 'haps'].includes(type)
-    const isGround = type === 'gnd'
+    const isSatellite = ['leo', 'meo', 'es', 'haps'].includes(type)
+    const isGround = type === 'es'
     const processingEnabled = hasProcessing(type)
     const normalizedProcessing = normalizeProcessing(
       (node.data?.processing as any) ?? undefined

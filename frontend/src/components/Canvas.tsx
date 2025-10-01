@@ -66,7 +66,7 @@ const nodeTypes: NodeTypes = {
   leo: NetworkNode,
   meo: NetworkNode,
   geo: NetworkNode,
-  gnd: NetworkNode,
+  es: NetworkNode,
   haps: NetworkNode,
   as: NetworkNode,
   ssop: NetworkNode,
@@ -81,7 +81,7 @@ const NODE_LOGICAL_TYPE: Record<string, LogicalNodeType> = {
   meo: 'SC',
   geo: 'SC',
   haps: 'HAPS',
-  gnd: 'ES',
+  es: 'ES',
   as: 'AS',
   ssop: 'SSOP',
 }
