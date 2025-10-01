@@ -11,11 +11,17 @@ import { NetworkState } from './types'
 import { prepareEdges } from '../../utils/edges'
 import { attachChannelData } from '../../utils/channels'
 import { createDefaultModelConfig, ModelConfig } from '../../domain/types'
+import {
+  GPSSConfig,
+  cloneGPSSConfig,
+  createDefaultGPSSConfig,
+} from '../../domain/gpss'
 
 const initialState: NetworkState = {
   nodes: [],
   edges: [],
   model: createDefaultModelConfig(),
+  gpss: createDefaultGPSSConfig(),
   topologyId: null,
   selectedId: null,
   addingType: null,
@@ -64,12 +70,16 @@ const networkSlice = createSlice({
       action: PayloadAction<{
         id: number
         model?: ModelConfig
+        gpss?: GPSSConfig
         nodes: Node<NodeData>[]
         edges: Edge[]
       }>
     ) {
       state.topologyId = action.payload.id
       state.model = action.payload.model ?? createDefaultModelConfig()
+      state.gpss = action.payload.gpss
+        ? cloneGPSSConfig(action.payload.gpss)
+        : createDefaultGPSSConfig()
       const normalizedNodes = action.payload.nodes.map(node => {
         const data = { ...(node.data ?? {}) }
         if (Array.isArray(data.interfaces)) {
@@ -94,6 +104,9 @@ const networkSlice = createSlice({
     },
     setModel(state, action: PayloadAction<ModelConfig>) {
       state.model = action.payload
+    },
+    setGpssConfig(state, action: PayloadAction<GPSSConfig>) {
+      state.gpss = cloneGPSSConfig(action.payload)
     },
     addNode(state, action: PayloadAction<Node<NodeData>>) {
       state.nodes.push(action.payload)
@@ -240,6 +253,7 @@ export const {
   select,
   setAddingType,
   setModel,
+  setGpssConfig,
   openNearby,
   closeNearby,
   openNodeMenu,

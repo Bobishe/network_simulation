@@ -1,4 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useAppDispatch, useAppSelector } from '../hooks'
+import {
+  GPSSConfig,
+  GPSSDistributionParameter,
+  createDefaultGPSSConfig,
+  createParametersForDistribution,
+  gpssDistributionParameters,
+  cloneGPSSConfig,
+} from '../domain/gpss'
+import { setGpssConfig } from '../features/network/networkSlice'
 
 type Option = {
   value: string
@@ -6,117 +16,9 @@ type Option = {
   description?: string
 }
 
-type DistributionParameter = {
-  key: string
-  label: string
-  placeholder?: string
-  description?: string
-}
+type DistributionParameter = GPSSDistributionParameter
 
-const distributionParameters: Record<string, DistributionParameter[]> = {
-  uniform: [
-    { key: 'min', label: 'Минимум', placeholder: '0' },
-    { key: 'max', label: 'Максимум', placeholder: '100' },
-  ],
-  exponential: [
-    {
-      key: 'lambda',
-      label: 'Параметр λ',
-      placeholder: '0.5',
-      description: 'Интенсивность экспоненциального распределения.',
-    },
-  ],
-  normal: [
-    { key: 'mean', label: 'Мат. ожидание μ', placeholder: '500' },
-    { key: 'std', label: 'Стандартное отклонение σ', placeholder: '100' },
-  ],
-  lognormal: [
-    { key: 'mu', label: 'μ логнормального распределения', placeholder: '6.2' },
-    { key: 'sigma', label: 'σ логнормального распределения', placeholder: '0.8' },
-  ],
-  erlang: [
-    { key: 'k', label: 'Порядок k', placeholder: '2' },
-    { key: 'rate', label: 'Интенсивность λ', placeholder: '0.5' },
-  ],
-  empirical: [
-    {
-      key: 'reference',
-      label: 'Источник данных',
-      placeholder: 'dataset.csv',
-      description: 'Укажите файл или идентификатор эмпирического распределения.',
-    },
-  ],
-}
-
-const createParametersForDistribution = (
-  distribution: string,
-  previous?: Record<string, string>
-): Record<string, string> => {
-  const params = distributionParameters[distribution] ?? []
-  const next: Record<string, string> = {}
-
-  params.forEach(parameter => {
-    next[parameter.key] = previous?.[parameter.key] ?? ''
-  })
-
-  return next
-}
-
-type ExperimentControl = {
-  horizon: string
-  timeUnit: string
-  replications: string
-  aggregationMethod: string
-  warmUpPolicy: string
-  resetPolicy: string
-  stopCondition: string
-}
-
-type RandomGenerators = {
-  baseSeed: string
-  seedMode: string
-  streamSeparation: string[]
-  streamPolicy: string
-}
-
-type TrafficCharacteristics = {
-  mtu: string
-  dataVolumeDistribution: string
-  dataVolumeParameters: Record<string, string>
-  dataTypesComposition: string[]
-  dataTypeMixMode: string
-  roundingPolicy: string
-}
-
-type ServicePolicies = {
-  serviceTimeDistribution: string
-  queueDiscipline: string
-  queueLimits: string
-}
-
-type ChannelModel = {
-  defaultThroughputValue: string
-  defaultThroughputUnit: string
-  delayFormula: string
-  jitterDistribution: string
-  duplexPolicy: string
-}
-
-type StatisticsCollection = {
-  metrics: string[]
-  aggregationGranularity: string
-  counterPrefixes: string
-  loggingPolicy: string
-}
-
-type FormData = {
-  experimentControl: ExperimentControl
-  randomGenerators: RandomGenerators
-  trafficCharacteristics: TrafficCharacteristics
-  servicePolicies: ServicePolicies
-  channelModel: ChannelModel
-  statisticsCollection: StatisticsCollection
-}
+type FormData = GPSSConfig
 
 interface Props {
   onClose: () => void
@@ -631,52 +533,6 @@ const loggingPolicyOptions: Option[] = [
   },
 ]
 
-const defaultDistribution = 'uniform'
-
-const initialState: FormData = {
-  experimentControl: {
-    horizon: '',
-    timeUnit: 'minutes',
-    replications: '',
-    aggregationMethod: 'mean',
-    warmUpPolicy: 'no_warmup',
-    resetPolicy: 'reset_all',
-    stopCondition: 'none',
-  },
-  randomGenerators: {
-    baseSeed: '',
-    seedMode: 'fixed',
-    streamSeparation: [],
-    streamPolicy: 'per_subsystem',
-  },
-  trafficCharacteristics: {
-    mtu: '65535',
-    dataVolumeDistribution: defaultDistribution,
-    dataVolumeParameters: createParametersForDistribution(defaultDistribution),
-    dataTypesComposition: [],
-    dataTypeMixMode: 'equal',
-    roundingPolicy: 'ceil',
-  },
-  servicePolicies: {
-    serviceTimeDistribution: 'exponential',
-    queueDiscipline: 'fifo',
-    queueLimits: 'no_limit',
-  },
-  channelModel: {
-    defaultThroughputValue: '',
-    defaultThroughputUnit: 'bps',
-    delayFormula: 'propagation_only',
-    jitterDistribution: 'none',
-    duplexPolicy: 'full_duplex',
-  },
-  statisticsCollection: {
-    metrics: [],
-    aggregationGranularity: 'none',
-    counterPrefixes: '',
-    loggingPolicy: 'aggregates',
-  },
-}
-
 function SelectField({
   label,
   value,
@@ -988,13 +844,36 @@ function TextInputField({
 }
 
 export default function GPSSModal({ onClose }: Props) {
-  const [formData, setFormData] = useState<FormData>(initialState)
+  const dispatch = useAppDispatch()
+  const { nodes, edges, model, gpss } = useAppSelector(state => state.network)
+  const [formData, setFormData] = useState<FormData>(createDefaultGPSSConfig())
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const isInitializedRef = useRef(false)
+  const shouldSyncRef = useRef(false)
 
-  const updateField = <K extends keyof FormData, T extends keyof FormData[K]>(
-    section: K,
-    field: T,
-    value: FormData[K][T]
+  useEffect(() => {
+    if (!isInitializedRef.current) {
+      setFormData(cloneGPSSConfig(gpss))
+      isInitializedRef.current = true
+    }
+  }, [gpss])
+
+  useEffect(() => {
+    if (!isInitializedRef.current) return
+    if (!shouldSyncRef.current) {
+      shouldSyncRef.current = true
+      return
+    }
+    dispatch(setGpssConfig(formData))
+  }, [formData, dispatch])
+
+  const updateField = <
+    Section extends keyof FormData,
+    Field extends keyof FormData[Section]
+  >(
+    section: Section,
+    field: Field,
+    value: FormData[Section][Field]
   ) => {
     setFormData(prev => ({
       ...prev,
@@ -1021,7 +900,7 @@ export default function GPSSModal({ onClose }: Props) {
 
   const currentDistributionParameters = useMemo(
     () =>
-      distributionParameters[
+      gpssDistributionParameters[
         formData.trafficCharacteristics.dataVolumeDistribution
       ] ?? [],
     [formData.trafficCharacteristics.dataVolumeDistribution]
@@ -1065,9 +944,25 @@ export default function GPSSModal({ onClose }: Props) {
       return
     }
 
-    const blob = new Blob([JSON.stringify(formData, null, 2)], {
-      type: 'application/json',
-    })
+    dispatch(setGpssConfig(formData))
+
+    const blob = new Blob(
+      [
+        JSON.stringify(
+          {
+            model,
+            nodes,
+            edges,
+            gpss: formData,
+          },
+          null,
+          2
+        ),
+      ],
+      {
+        type: 'application/json',
+      }
+    )
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
