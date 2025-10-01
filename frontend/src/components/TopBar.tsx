@@ -1,10 +1,11 @@
 import { ArrowDownTrayIcon } from '@heroicons/react/24/solid'
 import { useAppDispatch, useAppSelector } from '../hooks'
-import { SVGProps, useCallback, useEffect } from 'react'
+import { SVGProps, useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import classNames from 'classnames'
 import LinkIcon from '../img/link.png'
 import { setAddingType } from '../features/network/networkSlice'
+import GPSSModal from './GPSSModal'
 
 function FloppyDiskIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -19,6 +20,7 @@ export default function TopBar() {
   const { nodes, edges, model, topologyId, addingType } = useAppSelector(
     state => state.network
   )
+  const [showGPSSModal, setShowGPSSModal] = useState(false)
 
   const handleDownload = () => {
     const json = JSON.stringify({ model, nodes, edges }, null, 2)
@@ -57,38 +59,49 @@ export default function TopBar() {
   }, [handleSave])
 
   return (
-    <div className="fixed top-0 left-0 w-full h-12 bg-white border-b flex items-center px-2 z-20">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => dispatch(setAddingType(addingType === 'link' ? null : 'link'))}
-          title="Связь"
-          className={classNames(
-            'flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200 border-2',
-            addingType === 'link' ? 'border-blue-500' : 'border-transparent'
-          )}
-        >
-          <img src={LinkIcon} alt="Связь" className="w-5 h-5" />
-        </button>
+    <>
+      <div className="fixed top-0 left-0 w-full h-12 bg-white border-b flex items-center px-2 z-20">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => dispatch(setAddingType(addingType === 'link' ? null : 'link'))}
+            title="Связь"
+            className={classNames(
+              'flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200 border-2',
+              addingType === 'link' ? 'border-blue-500' : 'border-transparent'
+            )}
+          >
+            <img src={LinkIcon} alt="Связь" className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            type="button"
+            onClick={handleSave}
+            title="Сохранить топологию"
+            className="flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200"
+          >
+            <FloppyDiskIcon className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowGPSSModal(true)}
+            title="Настройка GPSS"
+            className="flex items-center justify-center px-4 h-10 rounded bg-gray-100 hover:bg-gray-200 font-semibold"
+          >
+            GPSS
+          </button>
+          <button
+            type="button"
+            onClick={handleDownload}
+            title="Скачать топологию"
+            className="flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200"
+          >
+            <ArrowDownTrayIcon className="w-5 h-5" />
+          </button>
+        </div>
       </div>
-      <div className="flex items-center gap-2 ml-auto">
-        <button
-          type="button"
-          onClick={handleSave}
-          title="Сохранить топологию"
-          className="flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200"
-        >
-          <FloppyDiskIcon className="w-5 h-5" />
-        </button>
-        <button
-          type="button"
-          onClick={handleDownload}
-          title="Скачать топологию"
-          className="flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200"
-        >
-          <ArrowDownTrayIcon className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
+      {showGPSSModal && <GPSSModal onClose={() => setShowGPSSModal(false)} />}
+    </>
   )
 }
