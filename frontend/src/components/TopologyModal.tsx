@@ -3,11 +3,16 @@ import { useAppDispatch } from '../hooks'
 import { setTopology } from '../features/network/networkSlice'
 import type { Node, Edge } from 'reactflow'
 import { createDefaultModelConfig, ModelConfig } from '../domain/types'
+import {
+  GPSSConfig,
+  createDefaultGPSSConfig,
+  cloneGPSSConfig,
+} from '../domain/gpss'
 
 interface Topology {
   id: number
   name: string
-  data: { model: ModelConfig; nodes: Node[]; edges: Edge[] }
+  data: { model: ModelConfig; gpss?: GPSSConfig; nodes: Node[]; edges: Edge[] }
   updated_at: string
 }
 
@@ -32,6 +37,9 @@ export default function TopologyModal({ onClose }: Props) {
       setTopology({
         id: topology.id,
         model: topology.data.model ?? createDefaultModelConfig(),
+        gpss: topology.data.gpss
+          ? cloneGPSSConfig(topology.data.gpss)
+          : createDefaultGPSSConfig(),
         nodes: topology.data.nodes,
         edges: topology.data.edges,
       })
@@ -46,7 +54,12 @@ export default function TopologyModal({ onClose }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name,
-        data: { model: createDefaultModelConfig(), nodes: [], edges: [] },
+        data: {
+          model: createDefaultModelConfig(),
+          gpss: createDefaultGPSSConfig(),
+          nodes: [],
+          edges: [],
+        },
       }),
     })
     if (res.ok) {
@@ -55,6 +68,9 @@ export default function TopologyModal({ onClose }: Props) {
         setTopology({
           id: topology.id,
           model: topology.data.model ?? createDefaultModelConfig(),
+          gpss: topology.data.gpss
+            ? cloneGPSSConfig(topology.data.gpss)
+            : createDefaultGPSSConfig(),
           nodes: topology.data.nodes,
           edges: topology.data.edges,
         })
