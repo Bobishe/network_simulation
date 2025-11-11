@@ -27,7 +27,7 @@ interface Props {
 const timeUnitOptions: Option[] = [
   {
     value: 'minutes',
-    label: 'минуты Default',
+    label: 'минуты',
     description: 'Базовая единица времени — минуты.',
   },
   {
@@ -45,7 +45,7 @@ const timeUnitOptions: Option[] = [
 const warmUpPolicyOptions: Option[] = [
   {
     value: 'no_warmup',
-    label: 'нет прогрева Default',
+    label: 'нет прогрева',
     description: 'Стартовые данные учитываются сразу.',
   },
   {
@@ -63,7 +63,7 @@ const warmUpPolicyOptions: Option[] = [
 const resetPolicyOptions: Option[] = [
   {
     value: 'reset_all',
-    label: 'сбросить всё Default',
+    label: 'сбросить всё',
     description: 'Обнулить все накопленные показатели.',
   },
   {
@@ -81,7 +81,7 @@ const resetPolicyOptions: Option[] = [
 const stopConditionOptions: Option[] = [
   {
     value: 'none',
-    label: 'не использовать Default',
+    label: 'не использовать',
     description: 'Моделирование завершается только по горизонту времени.',
   },
   {
@@ -114,7 +114,7 @@ const stopConditionOptions: Option[] = [
 const aggregationOptions: Option[] = [
   {
     value: 'mean',
-    label: 'среднее по репликациям Default',
+    label: 'среднее по репликациям',
     description: 'Классическое усреднение по всем прогоном.',
   },
   {
@@ -142,7 +142,7 @@ const aggregationOptions: Option[] = [
 const seedModeOptions: Option[] = [
   {
     value: 'fixed',
-    label: 'фиксированный Default',
+    label: 'фиксированный',
     description: 'Одинаковый seed во всех запусках.',
   },
   {
@@ -203,7 +203,7 @@ const streamSeparationOptions: Option[] = [
 const streamPolicyOptions: Option[] = [
   {
     value: 'per_subsystem',
-    label: 'каждому подсектору — свой seed Default',
+    label: 'каждому подсектору — свой seed',
     description: 'Максимальная независимость потоков случайных чисел.',
   },
   {
@@ -216,7 +216,7 @@ const streamPolicyOptions: Option[] = [
 const dataVolumeDistributionOptions: Option[] = [
   {
     value: 'uniform',
-    label: 'Равномерное Default',
+    label: 'Равномерное',
     description: 'Пакеты равновероятно распределены в заданном диапазоне.',
   },
   {
@@ -267,7 +267,7 @@ const dataTypeOptions: Option[] = [
 const dataTypeMixOptions: Option[] = [
   {
     value: 'equal',
-    label: 'равные доли Default',
+    label: 'равные доли',
     description: 'Каждый тип получает одинаковую долю.',
   },
   {
@@ -285,7 +285,7 @@ const dataTypeMixOptions: Option[] = [
 const roundingPolicyOptions: Option[] = [
   {
     value: 'ceil',
-    label: 'вверх (ceil) Default',
+    label: 'вверх (ceil)',
     description: 'Округлять количество пакетов в большую сторону.',
   },
   {
@@ -303,7 +303,7 @@ const roundingPolicyOptions: Option[] = [
 const serviceTimeOptions: Option[] = [
   {
     value: 'exponential',
-    label: 'Экспоненциальное Default',
+    label: 'Экспоненциальное',
     description: 'Поток обслуживания с памятью нулевой длины.',
   },
   {
@@ -341,7 +341,7 @@ const serviceTimeOptions: Option[] = [
 const queueDisciplineOptions: Option[] = [
   {
     value: 'fifo',
-    label: 'FIFO Default',
+    label: 'FIFO',
     description: 'Первым пришёл — первым обслужен.',
   },
   {
@@ -369,7 +369,7 @@ const queueDisciplineOptions: Option[] = [
 const queueLimitOptions: Option[] = [
   {
     value: 'no_limit',
-    label: 'не ограничивать Default',
+    label: 'не ограничивать',
     description: 'Очередь может расти без ограничений.',
   },
   {
@@ -387,7 +387,7 @@ const queueLimitOptions: Option[] = [
 const throughputUnitOptions: Option[] = [
   {
     value: 'bps',
-    label: 'бит/с Default',
+    label: 'бит/с',
     description: 'Базовая единица пропускной способности.',
   },
   {
@@ -410,7 +410,7 @@ const throughputUnitOptions: Option[] = [
 const delayFormulaOptions: Option[] = [
   {
     value: 'propagation_only',
-    label: 'только пропагация (S/c) Default',
+    label: 'только пропагация (S/c)',
     description: 'Учитывается только время распространения.',
   },
   {
@@ -438,7 +438,7 @@ const delayFormulaOptions: Option[] = [
 const jitterOptions: Option[] = [
   {
     value: 'none',
-    label: 'отсутствует Default',
+    label: 'отсутствует',
     description: 'Дополнительный джиттер не учитывается.',
   },
   {
@@ -466,7 +466,7 @@ const jitterOptions: Option[] = [
 const duplexOptions: Option[] = [
   {
     value: 'full_duplex',
-    label: 'full-duplex Default',
+    label: 'full-duplex',
     description: 'Передача в обоих направлениях одновременно.',
   },
   {
@@ -496,7 +496,7 @@ const metricsOptions: Option[] = [
 const aggregationGranularityOptions: Option[] = [
   {
     value: 'none',
-    label: 'без разбиения Default',
+    label: 'без разбиения',
     description: 'Хранить только агрегированные показатели.',
   },
   { value: '1m', label: '1 мин', description: 'Интервал агрегации 1 минута.' },

@@ -1,0 +1,284 @@
+*====================================[Настройки модели 1]====================================*
+
+capacity            VARIABLE  (Uniform(1, 100, 15000000))
+
+*============================================================================================*
+*======================[Генератор трафика от абонентов кластера (AS1)]=======================*
+
+la_gen_AS1          EQU       10.0
+
+                    GENERATE  (Exponential(1, 0, 1/la_gen_AS1))
+                    ASSIGN    cap_data_AS, (V$capacity)
+                    SPLIT     (P$cap_data_AS/65535)
+                    ASSIGN    type_data, 1
+                    TRANSFER  , in_int1_SC1
+
+to_AS               TERMINATE
+
+*============================================================================================*
+*==============================[КА с обработкой на борту (SC1)]==============================*
+
+service_SC1         STORAGE   3
+ q_SC1              EQU       20
+mu_SC1              EQU       3.0
+ q_in_int1_SC1      EQU       20
+mu_in_int1_SC1      EQU       10
+ q_in_int2_SC1      EQU       20
+mu_in_int2_SC1      EQU       10
+ q_out_int1_SC1     EQU       20
+mu_out_int1_SC1     EQU       9
+ q_out_int2_SC1     EQU       20
+mu_out_int2_SC1     EQU       9
+
+
+in_int1_SC1         ASSIGN    number_in_int_SC, 1
+                    TEST    L Q$queue_in_int1_SC1, q_in_int1_SC1, loss_in_int1_SC1
+                    QUEUE     queue_in_int1_SC1
+                    SEIZE     service_in_int1_SC1
+                    DEPART    queue_in_int1_SC1
+                    ADVANCE   Exponential(1, 0, 1/mu_in_int1_SC1)
+                    RELEASE   service_in_int1_SC1
+                    TRANSFER  , processing_SC1
+
+loss_in_int1_SC1    SAVEVALUE loss_in_int1_SC1_+, 1
+                    TERMINATE
+
+in_int2_SC1         ASSIGN    number_in_int_SC, 2
+                    TEST    L Q$queue_in_int2_SC1, q_in_int2_SC1, loss_in_int2_SC1
+                    QUEUE     queue_in_int2_SC1
+                    SEIZE     service_in_int2_SC1
+                    DEPART    queue_in_int2_SC1
+                    ADVANCE   Exponential(1, 0, 1/mu_in_int2_SC1)
+                    RELEASE   service_in_int2_SC1
+                    TRANSFER  , processing_SC1
+
+loss_in_int2_SC1    SAVEVALUE loss_in_int2_SC1_+, 1
+                    TERMINATE
+
+
+processing_SC1      TEST    L Q$queue_SC1, q_SC1, loss_SC1
+                    QUEUE     queue_SC1
+                    ENTER     service_SC1, 1
+                    DEPART    queue_SC1
+                    ADVANCE   Exponential(1, 0, 1/mu_SC1)
+                    LEAVE     service_SC1, 1
+
+                    TEST    E P$type_data, 1, TEST_SC1_1
+                    TEST    E P$type_data, 2, TEST_SC1_2
+
+TEST_SC1_1          TRANSFER  out_int1_SC1
+TEST_SC1_2          TRANSFER  out_int2_SC1
+
+loss_SC1            SAVEVALUE loss_SC1_+, 1
+                    TERMINATE
+
+
+out_int1_SC1        ASSIGN    number_out_int_SC, 1
+                    TEST    L Q$queue_out_int1_SC1, q_out_int1_SC1, loss_out_int1_SC1
+                    QUEUE     queue_out_int1_SC1
+                    SEIZE     service_out_int1_SC1
+                    DEPART    queue_out_int1_SC1
+                    ADVANCE   Exponential(1, 0, 1/mu_out_int1_SC1)
+                    RELEASE   service_out_int1_SC1
+                    TRANSFER  , in_int1_HAPS1
+
+loss_out_int1_SC1   SAVEVALUE loss_out_int1_SC1_+, 1
+                    TERMINATE
+
+out_int2_SC1        ASSIGN    number_out_int_SC, 2
+                    TEST    L Q$queue_out_int2_SC1, q_out_int2_SC1, loss_out_int2_SC1
+                    QUEUE     queue_out_int2_SC1
+                    SEIZE     service_out_int2_SC1
+                    DEPART    queue_out_int2_SC1
+                    ADVANCE   Exponential(1, 0, 1/mu_out_int2_SC1)
+                    RELEASE   service_out_int2_SC1
+                    TRANSFER  , to_AS
+
+loss_out_int2_SC1   SAVEVALUE loss_out_int2_SC1_+, 1
+                    TERMINATE
+
+*============================================================================================*
+*============================[HAPS с обработкой на борту (HAPS1)]============================*
+
+service_HAPS1       STORAGE   3
+ q_HAPS1            EQU       20
+mu_HAPS1            EQU       3.0
+ q_in_int1_HAPS1    EQU       20
+mu_in_int1_HAPS1    EQU       10
+ q_in_int2_HAPS1    EQU       20
+mu_in_int2_HAPS1    EQU       10
+ q_out_int1_HAPS1   EQU       20
+mu_out_int1_HAPS1   EQU       9
+ q_out_int2_HAPS1   EQU       20
+mu_out_int2_HAPS1   EQU       9
+
+
+in_int1_HAPS1       ASSIGN    number_in_int_HAPS, 1
+                    TEST    L Q$queue_in_int1_HAPS1, q_in_int1_HAPS1, loss_in_int1_HAPS1
+                    QUEUE     queue_in_int1_HAPS1
+                    SEIZE     service_in_int1_HAPS1
+                    DEPART    queue_in_int1_HAPS1
+                    ADVANCE   Exponential(1, 0, 1/mu_in_int1_HAPS1)
+                    RELEASE   service_in_int1_HAPS1
+                    TRANSFER  , processing_HAPS1
+
+loss_in_int1_HAPS1  SAVEVALUE loss_in_int1_HAPS1_+, 1
+                    TERMINATE
+
+in_int2_HAPS1       ASSIGN    number_in_int_HAPS, 2
+                    TEST    L Q$queue_in_int2_HAPS1, q_in_int2_HAPS1, loss_in_int2_HAPS1
+                    QUEUE     queue_in_int2_HAPS1
+                    SEIZE     service_in_int2_HAPS1
+                    DEPART    queue_in_int2_HAPS1
+                    ADVANCE   Exponential(1, 0, 1/mu_in_int2_HAPS1)
+                    RELEASE   service_in_int2_HAPS1
+                    TRANSFER  , processing_HAPS1
+
+loss_in_int2_HAPS1  SAVEVALUE loss_in_int2_HAPS1_+, 1
+                    TERMINATE
+
+
+processing_HAPS1    TEST    L Q$queue_HAPS1, q_HAPS1, loss_HAPS1
+                    QUEUE     queue_HAPS1
+                    ENTER     service_HAPS1, 1
+                    DEPART    queue_HAPS1
+                    ADVANCE   Exponential(1, 0, 1/mu_HAPS1)
+                    LEAVE     service_HAPS1, 1
+
+                    TEST    E P$type_data, 1, TEST_HAPS1_1
+                    TEST    E P$type_data, 2, TEST_HAPS1_2
+
+TEST_HAPS1_1        TRANSFER  out_int1_HAPS1
+TEST_HAPS1_2        TRANSFER  out_int2_HAPS1
+
+loss_HAPS1          SAVEVALUE loss_HAPS1_+, 1
+                    TERMINATE
+
+
+out_int1_HAPS1      ASSIGN    number_out_int_HAPS, 1
+                    TEST    L Q$queue_out_int1_HAPS1, q_out_int1_HAPS1, loss_out_int1_HAPS1
+                    QUEUE     queue_out_int1_HAPS1
+                    SEIZE     service_out_int1_HAPS1
+                    DEPART    queue_out_int1_HAPS1
+                    ADVANCE   Exponential(1, 0, 1/mu_out_int1_HAPS1)
+                    RELEASE   service_out_int1_HAPS1
+                    TRANSFER  , in_int1_ES1
+
+loss_out_int1_HAPS1 SAVEVALUE loss_out_int1_HAPS1_+, 1
+                    TERMINATE
+
+out_int2_HAPS1      ASSIGN    number_out_int_HAPS, 2
+                    TEST    L Q$queue_out_int2_HAPS1, q_out_int2_HAPS1, loss_out_int2_HAPS1
+                    QUEUE     queue_out_int2_HAPS1
+                    SEIZE     service_out_int2_HAPS1
+                    DEPART    queue_out_int2_HAPS1
+                    ADVANCE   Exponential(1, 0, 1/mu_out_int2_HAPS1)
+                    RELEASE   service_out_int2_HAPS1
+                    TRANSFER  , in_int2_SC1
+
+loss_out_int2_HAPS1 SAVEVALUE loss_out_int2_HAPS1_+, 1
+                    TERMINATE
+
+*============================================================================================*
+*===================================[Земная станция (ES1)]===================================*
+
+service_ES1         STORAGE   3
+ q_ES1              EQU       20
+mu_ES1              EQU       3.0
+ q_in_int1_ES1      EQU       20
+mu_in_int1_ES1      EQU       10
+ q_in_int2_ES1      EQU       20
+mu_in_int2_ES1      EQU       10
+ q_out_int1_ES1     EQU       20
+mu_out_int1_ES1     EQU       9
+ q_out_int2_ES1     EQU       20
+mu_out_int2_ES1     EQU       9
+
+
+in_int1_ES1         ASSIGN    number_in_int_ES, 1
+                    TEST    L Q$queue_in_int1_ES1, q_in_int1_ES1, loss_in_int1_ES1
+                    QUEUE     queue_in_int1_ES1
+                    SEIZE     service_in_int1_ES1
+                    DEPART    queue_in_int1_ES1
+                    ADVANCE   Exponential(1, 0, 1/mu_in_int1_ES1)
+                    RELEASE   service_in_int1_ES1
+                    TRANSFER  , processing_ES1
+
+loss_in_int1_ES1    SAVEVALUE loss_in_int1_ES1_+, 1
+                    TERMINATE
+
+in_int2_ES1         ASSIGN    number_in_int_ES, 2
+                    TEST    L Q$queue_in_int2_ES1, q_in_int2_ES1, loss_in_int2_ES1
+                    QUEUE     queue_in_int2_ES1
+                    SEIZE     service_in_int2_ES1
+                    DEPART    queue_in_int2_ES1
+                    ADVANCE   Exponential(1, 0, 1/mu_in_int2_ES1)
+                    RELEASE   service_in_int2_ES1
+                    TRANSFER  , processing_ES1
+
+loss_in_int2_ES1    SAVEVALUE loss_in_int2_ES1_+, 1
+                    TERMINATE
+
+
+processing_ES1      TEST    L Q$queue_ES1, q_ES1, loss_ES1
+                    QUEUE     queue_ES1
+                    ENTER     service_ES1, 1
+                    DEPART    queue_ES1
+                    ADVANCE   Exponential(1, 0, 1/mu_ES1)
+                    LEAVE     service_ES1, 1
+
+                    TEST    E P$type_data, 1, TEST_ES1_1
+                    TEST    E P$type_data, 2, TEST_ES1_2
+
+TEST_ES1_1          TRANSFER  out_int1_ES1
+TEST_ES1_2          TRANSFER  out_int2_ES1
+
+loss_ES1            SAVEVALUE loss_ES1_+, 1
+                    TERMINATE
+
+
+out_int1_ES1        ASSIGN    number_out_int_ES, 1
+                    TEST    L Q$queue_out_int1_ES1, q_out_int1_ES1, loss_out_int1_ES1
+                    QUEUE     queue_out_int1_ES1
+                    SEIZE     service_out_int1_ES1
+                    DEPART    queue_out_int1_ES1
+                    ADVANCE   Exponential(1, 0, 1/mu_out_int1_ES1)
+                    RELEASE   service_out_int1_ES1
+                    TRANSFER  , to_SSOP
+
+loss_out_int1_ES1   SAVEVALUE loss_out_int1_ES1_+, 1
+                    TERMINATE
+
+out_int2_ES1        ASSIGN    number_out_int_ES, 2
+                    TEST    L Q$queue_out_int2_ES1, q_out_int2_ES1, loss_out_int2_ES1
+                    QUEUE     queue_out_int2_ES1
+                    SEIZE     service_out_int2_ES1
+                    DEPART    queue_out_int2_ES1
+                    ADVANCE   Exponential(1, 0, 1/mu_out_int2_ES1)
+                    RELEASE   service_out_int2_ES1
+                    TRANSFER  , in_int2_HAPS1
+
+loss_out_int2_ES1   SAVEVALUE loss_out_int2_ES1_+, 1
+                    TERMINATE
+
+*============================================================================================*
+*=======================================[ССОП (SSOP1)]=======================================*
+
+la_gen_SSOP1        EQU       10.0
+
+to_SSOP             TERMINATE
+
+                    GENERATE  (Exponential(1, 0, 1/la_gen_SSOP1))
+                    ASSIGN    cap_data_SSOP, (V$capacity)
+                    SPLIT     (P$cap_data_SSOP/65535)
+                    ASSIGN    type_data, 2
+                    TRANSFER  , in_int2_ES1
+
+*============================================================================================*
+*====================================[Настройки модели 2]====================================*
+
+                    GENERATE  1440
+                    TERMINATE 1
+                    START     1
+
+*============================================================================================*
