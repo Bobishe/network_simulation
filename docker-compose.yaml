@@ -1,0 +1,15 @@
+services:
+  gpss-api:
+    hostname: gpss-api
+    restart: unless-stopped
+    build:
+      context: ./gpss-api
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./gpss-api/app:/gpss-api/app:ro
+    ports:
+      - ${API_PORT}:${API_PORT}
