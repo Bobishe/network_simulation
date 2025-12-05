@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { Node } from 'reactflow'
 import { useAppDispatch, useAppSelector } from '../hooks'
+import type { NodeData } from '../utils/interfaces'
 import {
   GPSSConfig,
   GPSSDistributionParameter,
@@ -937,6 +939,34 @@ export default function GPSSModal({ onClose }: Props) {
     return newErrors
   }
 
+  const transformNodesForGPSS = (nodes: Node<NodeData>[]) => {
+    return nodes.map((node: Node<NodeData>) => {
+      const newNode = { ...node }
+      if (newNode.data) {
+        const newData = { ...newNode.data }
+
+        // Удаляем дефисы из метки узла
+        if (typeof newData.label === 'string') {
+          newData.label = newData.label.replace(/-/g, '')
+        }
+
+        // Удаляем дефисы из connectedNodeLabel в интерфейсах
+        if (Array.isArray(newData.interfaces)) {
+          newData.interfaces = newData.interfaces.map((iface: any) => {
+            const newIface = { ...iface }
+            if (typeof newIface.connectedNodeLabel === 'string') {
+              newIface.connectedNodeLabel = newIface.connectedNodeLabel.replace(/-/g, '')
+            }
+            return newIface
+          })
+        }
+
+        newNode.data = newData
+      }
+      return newNode
+    })
+  }
+
   const handleDownload = () => {
     const validationResult = validate()
 
@@ -946,12 +976,15 @@ export default function GPSSModal({ onClose }: Props) {
 
     dispatch(setGpssConfig(formData))
 
+    // Трансформируем узлы для GPSS (удаляем дефисы из меток)
+    const transformedNodes = transformNodesForGPSS(nodes)
+
     const blob = new Blob(
       [
         JSON.stringify(
           {
             model,
-            nodes,
+            nodes: transformedNodes,
             edges,
             gpss: formData,
           },
