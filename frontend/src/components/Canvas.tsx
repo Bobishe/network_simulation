@@ -47,6 +47,7 @@ import { createDefaultGenerator } from '../utils/generatorConfig'
 import {
   createDefaultProcessing,
   generateNodeCode,
+  generateNodeLabel,
   hasProcessing,
 } from '../utils/nodeProcessing'
 import {
@@ -274,10 +275,11 @@ export default function Canvas() {
         x: event.clientX,
         y: event.clientY,
       })
+      const label = generateNodeLabel(type, nodes)
       const id = `${type}-${Date.now()}`
       const { lat, lon } = posToLatLon(position)
       const data: NodeData = {
-        label: id,
+        label,
         lat,
         lon,
         interfaces: [],
