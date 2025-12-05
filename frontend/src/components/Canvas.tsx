@@ -275,9 +275,9 @@ export default function Canvas() {
         x: event.clientX,
         y: event.clientY,
       })
-      const id = `${type}-${Date.now()}`
-      const { lat, lon } = posToLatLon(position)
       const label = generateNodeLabel(type, nodes)
+      const id = label
+      const { lat, lon } = posToLatLon(position)
       const data: NodeData = {
         label,
         lat,
