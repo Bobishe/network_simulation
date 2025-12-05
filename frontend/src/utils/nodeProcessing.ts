@@ -99,3 +99,43 @@ export const generateNodeCode = (
 
   return `${prefix}${idx}`
 }
+
+/**
+ * Generates a sequential label for a node based on its type.
+ * Each node type has its own numbering sequence.
+ * Example: leo-1, leo-2, geo-1, haps-1, etc.
+ */
+export const generateNodeLabel = (
+  type: string | undefined,
+  nodes: Node<NodeData>[]
+): string => {
+  if (!type) return `node-${Date.now()}`
+
+  const used = new Set<number>()
+  const prefix = `${type}-`
+
+  nodes.forEach(node => {
+    const label = node.data?.label
+    if (typeof label !== 'string') return
+    if (!label.startsWith(prefix)) return
+    const suffix = parseInt(label.slice(prefix.length), 10)
+    if (!Number.isNaN(suffix)) {
+      used.add(suffix)
+    }
+  })
+
+  let idx = 1
+  while (used.has(idx)) {
+    idx += 1
+  }
+
+  return `${type}-${idx}`
+}
+
+/**
+ * Transforms a node label for GPSS export by removing the hyphen.
+ * Example: leo-1 -> leo1, haps-2 -> haps2
+ */
+export const labelToGpssFormat = (label: string): string => {
+  return label.replace(/-/g, '')
+}

@@ -9,6 +9,7 @@ import {
   cloneGPSSConfig,
 } from '../domain/gpss'
 import { setGpssConfig } from '../features/network/networkSlice'
+import { labelToGpssFormat } from '../utils/nodeProcessing'
 
 type Option = {
   value: string
@@ -946,12 +947,21 @@ export default function GPSSModal({ onClose }: Props) {
 
     dispatch(setGpssConfig(formData))
 
+    // Transform nodes for GPSS export: remove hyphens from labels (leo-1 -> leo1)
+    const gpssNodes = nodes.map(node => ({
+      ...node,
+      data: {
+        ...node.data,
+        label: node.data?.label ? labelToGpssFormat(String(node.data.label)) : node.data?.label,
+      },
+    }))
+
     const blob = new Blob(
       [
         JSON.stringify(
           {
             model,
-            nodes,
+            nodes: gpssNodes,
             edges,
             gpss: formData,
           },
