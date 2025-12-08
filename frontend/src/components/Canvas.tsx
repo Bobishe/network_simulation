@@ -385,13 +385,12 @@ export default function Canvas() {
             } else {
               if (linkSource !== node.id) {
                 createConnection(linkSource, node.id)
+                toast.success('Связь создана')
               } else {
                 const srcNode = nodes.find(n => n.id === linkSource)
                 if (srcNode) dispatch(updateNode({ ...srcNode, className: undefined }))
               }
               setLinkSource(null)
-              dispatch(setAddingType(null))
-              toast.success('Связь создана')
             }
             dispatch(closeNearby())
           } else {

@@ -65,7 +65,7 @@ export default function TopBar() {
           <button
             type="button"
             onClick={() => dispatch(setAddingType(addingType === 'link' ? null : 'link'))}
-            title="Связь"
+            title={addingType === 'link' ? 'Выключить режим связи' : 'Включить режим связи'}
             className={classNames(
               'flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200 border-2',
               addingType === 'link' ? 'border-blue-500' : 'border-transparent'
@@ -74,6 +74,20 @@ export default function TopBar() {
             <img src={LinkIcon} alt="Связь" className="w-5 h-5" />
           </button>
         </div>
+        {addingType === 'link' && (
+          <div className="absolute top-14 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-30 flex items-center gap-2">
+            <span className="inline-block w-2 h-2 bg-white rounded-full animate-pulse" />
+            <span>Режим создания связей активен</span>
+            <button
+              type="button"
+              onClick={() => dispatch(setAddingType(null))}
+              className="ml-2 text-white hover:text-gray-200 font-bold"
+              title="Закрыть"
+            >
+              ×
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2 ml-auto">
           <button
             type="button"
