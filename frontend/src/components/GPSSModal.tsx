@@ -946,13 +946,60 @@ export default function GPSSModal({ onClose }: Props) {
 
     dispatch(setGpssConfig(formData))
 
+    // Remove dashes from node IDs and labels for GPSS compatibility
+    const removeDashes = (str: string) => str.replace(/-/g, '')
+
+    const gpssNodes = nodes.map(node => ({
+      ...node,
+      id: removeDashes(node.id),
+      data: node.data
+        ? {
+            ...node.data,
+            label:
+              typeof node.data.label === 'string'
+                ? removeDashes(node.data.label)
+                : node.data.label,
+            interfaces: node.data.interfaces?.map((iface: { edgeId?: string; [key: string]: unknown }) => ({
+              ...iface,
+              edgeId: iface.edgeId ? removeDashes(iface.edgeId) : iface.edgeId,
+            })),
+          }
+        : node.data,
+    }))
+
+    const gpssEdges = edges.map(edge => ({
+      ...edge,
+      id: removeDashes(edge.id),
+      source: removeDashes(edge.source),
+      target: removeDashes(edge.target),
+      data: edge.data?.channel
+        ? {
+            ...edge.data,
+            channel: {
+              ...edge.data.channel,
+              id: removeDashes(edge.data.channel.id),
+              from: {
+                ...edge.data.channel.from,
+                nodeId: removeDashes(edge.data.channel.from.nodeId),
+              },
+              to: {
+                ...edge.data.channel.to,
+                nodeId: edge.data.channel.to.nodeId
+                  ? removeDashes(edge.data.channel.to.nodeId)
+                  : edge.data.channel.to.nodeId,
+              },
+            },
+          }
+        : edge.data,
+    }))
+
     const blob = new Blob(
       [
         JSON.stringify(
           {
             model,
-            nodes,
-            edges,
+            nodes: gpssNodes,
+            edges: gpssEdges,
             gpss: formData,
           },
           null,

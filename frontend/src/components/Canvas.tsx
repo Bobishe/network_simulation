@@ -86,6 +86,28 @@ const NODE_LOGICAL_TYPE: Record<string, LogicalNodeType> = {
   ssop: 'SSOP',
 }
 
+/**
+ * Generates a sequential ID for a node of the given type.
+ * Scans existing nodes to find the maximum number used for this type,
+ * then returns the next available ID (e.g., leo-1, leo-2, etc.)
+ */
+function generateSequentialNodeId(type: string, existingNodes: Node[]): string {
+  const pattern = new RegExp(`^${type}-(\\d+)$`)
+  let maxNumber = 0
+
+  for (const node of existingNodes) {
+    const match = node.id.match(pattern)
+    if (match) {
+      const num = parseInt(match[1], 10)
+      if (num > maxNumber) {
+        maxNumber = num
+      }
+    }
+  }
+
+  return `${type}-${maxNumber + 1}`
+}
+
 export default function Canvas() {
   const dispatch = useAppDispatch()
   const { nodes, edges, addingType, selectedId } = useAppSelector(state => state.network)
@@ -274,7 +296,7 @@ export default function Canvas() {
         x: event.clientX,
         y: event.clientY,
       })
-      const id = `${type}-${Date.now()}`
+      const id = generateSequentialNodeId(type, nodes)
       const { lat, lon } = posToLatLon(position)
       const data: NodeData = {
         label: id,
