@@ -99,33 +99,3 @@ export const generateNodeCode = (
 
   return `${prefix}${idx}`
 }
-
-export const generateNodeLabel = (
-  type: string | undefined,
-  nodes: Node<NodeData>[]
-): string => {
-  if (!type) return 'node-1'
-
-  const used = new Set<number>()
-  nodes.forEach(node => {
-    if (node.type !== type) return
-    const label = node.data?.label
-    if (typeof label !== 'string') return
-
-    // Парсим метку формата "type-N"
-    const match = label.match(new RegExp(`^${type}-(\\d+)$`))
-    if (match) {
-      const num = parseInt(match[1], 10)
-      if (!Number.isNaN(num)) {
-        used.add(num)
-      }
-    }
-  })
-
-  let idx = 1
-  while (used.has(idx)) {
-    idx += 1
-  }
-
-  return `${type}-${idx}`
-}
