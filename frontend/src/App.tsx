@@ -6,19 +6,20 @@ import StatusBar from './components/StatusBar'
 import { useAppSelector } from './hooks'
 import { useState } from 'react'
 import TopologyModal from './components/TopologyModal'
+import { NotificationProvider } from './contexts/NotificationContext'
 
 export default function App() {
   const { selectedId, nodes, edges } = useAppSelector(state => state.network)
   const [showModal, setShowModal] = useState(nodes.length === 0 && edges.length === 0)
 
   return (
-    <>
+    <NotificationProvider>
       <TopBar />
+      <PaletteBar />
       <div
-        className="h-full pt-12 pb-10 grid"
-        style={{ gridTemplateColumns: selectedId ? '80px 1fr 416px' : '80px 1fr' }}
+        className="h-full pt-12 pb-10 ml-20 grid"
+        style={{ gridTemplateColumns: selectedId ? '1fr 416px' : '1fr' }}
       >
-        <PaletteBar />
         <div className="flex">
           <Canvas />
         </div>
@@ -31,6 +32,6 @@ export default function App() {
       </div>
       <StatusBar />
       {showModal && <TopologyModal onClose={() => setShowModal(false)} />}
-    </>
+    </NotificationProvider>
   )
 }

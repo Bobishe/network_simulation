@@ -1,7 +1,7 @@
 import { ArrowDownTrayIcon } from '@heroicons/react/24/solid'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import { SVGProps, useCallback, useEffect, useRef, useState } from 'react'
-import toast from 'react-hot-toast'
+import { useNotification } from '../contexts/NotificationContext'
 import classNames from 'classnames'
 import LinkIcon from '../img/link.png'
 import { setAddingType, setAutosave } from '../features/network/networkSlice'
@@ -17,6 +17,7 @@ function FloppyDiskIcon(props: SVGProps<SVGSVGElement>) {
 
 export default function TopBar() {
   const dispatch = useAppDispatch()
+  const { showNotification } = useNotification()
   const { nodes, edges, model, gpss, topologyId, addingType, autosaveEnabled } = useAppSelector(
     state => state.network
   )
@@ -43,11 +44,11 @@ export default function TopBar() {
       body: JSON.stringify({ data: { model, nodes, edges, gpss } }),
     })
     if (res.ok) {
-      toast.success('Сохранено')
+      showNotification('Сохранено', 'success')
     } else {
-      toast.error('Ошибка сохранения')
+      showNotification('Ошибка сохранения', 'error')
     }
-  }, [topologyId, nodes, edges, model, gpss])
+  }, [topologyId, nodes, edges, model, gpss, showNotification])
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {

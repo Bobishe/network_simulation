@@ -3,10 +3,11 @@ import {
   closeDeleteConfirmation,
   removeElement,
 } from '../features/network/networkSlice'
-import toast from 'react-hot-toast'
+import { useNotification } from '../contexts/NotificationContext'
 
 export default function DeleteConfirmationDialog() {
   const dispatch = useAppDispatch()
+  const { showNotification } = useNotification()
   const confirmation = useAppSelector(state => state.network.deleteConfirmation)
 
   if (!confirmation) return null
@@ -43,7 +44,7 @@ export default function DeleteConfirmationDialog() {
             onClick={() => {
               dispatch(removeElement(elementId))
               dispatch(closeDeleteConfirmation())
-              toast.success('Объект удалён')
+              showNotification('Объект удалён', 'success')
             }}
           >
             Удалить

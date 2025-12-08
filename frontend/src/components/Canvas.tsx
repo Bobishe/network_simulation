@@ -60,7 +60,7 @@ import NearbyPopup from './NearbyPopup'
 import NodeContextMenu from './NodeContextMenu'
 import InterfacesPopup from './InterfacesPopup'
 import DeleteConfirmationDialog from './DeleteConfirmationDialog'
-import toast from 'react-hot-toast'
+import { useNotification } from '../contexts/NotificationContext'
 
 const nodeTypes: NodeTypes = {
   leo: NetworkNode,
@@ -110,6 +110,7 @@ function generateSequentialNodeId(type: string, existingNodes: Node[]): string {
 
 export default function Canvas() {
   const dispatch = useAppDispatch()
+  const { showNotification } = useNotification()
   const { nodes, edges, addingType, selectedId } = useAppSelector(state => state.network)
   const reactFlow = useReactFlow()
   const [linkSource, setLinkSource] = useState<string | null>(null)
@@ -321,9 +322,9 @@ export default function Canvas() {
       }
       dispatch(addNode({ id, type, position, data }))
       dispatch(setAddingType(null))
-      toast.success('Узел добавлен')
+      showNotification('Узел добавлен', 'success')
     },
-    [dispatch, reactFlow, nodes]
+    [dispatch, reactFlow, nodes, showNotification]
   )
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -385,7 +386,7 @@ export default function Canvas() {
             } else {
               if (linkSource !== node.id) {
                 createConnection(linkSource, node.id)
-                toast.success('Связь создана')
+                showNotification('Связь создана', 'success')
               } else {
                 const srcNode = nodes.find(n => n.id === linkSource)
                 if (srcNode) dispatch(updateNode({ ...srcNode, className: undefined }))

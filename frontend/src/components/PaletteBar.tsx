@@ -22,7 +22,7 @@ const items = [
 
 export default function PaletteBar() {
   return (
-    <div className="sticky left-0 top-12 z-10 bg-white flex flex-col items-center p-2 h-full w-20 border-r">
+    <div className="fixed left-0 top-12 bottom-0 z-10 bg-white flex flex-col items-center p-2 w-20 border-r">
       {items.map((item) => (
         <PaletteButton
           key={item.type}
