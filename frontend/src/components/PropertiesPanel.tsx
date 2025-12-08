@@ -33,7 +33,7 @@ import {
   estimateServiceRateFromPhysics,
   type ChannelEdgeData,
 } from '../utils/channels'
-import toast from 'react-hot-toast'
+import { useNotification } from '../contexts/NotificationContext'
 import type { ChannelConfig, ModelConfig } from '../domain/types'
 
 const typeNames: Record<string, string> = {
@@ -198,6 +198,7 @@ function NodePositionUpdater({ node }: { node: Node }) {
 
 export default function PropertiesPanel() {
   const dispatch = useAppDispatch()
+  const { showNotification } = useNotification()
   const { nodes, edges, model, selectedId } = useAppSelector(
     state => state.network
   )
@@ -420,7 +421,7 @@ export default function PropertiesPanel() {
             })
             dispatch(setElements({ nodes: updatedNodes, edges }))
             dispatch(select(null))
-            toast.success('Свойства сохранены')
+            showNotification('Свойства сохранены', 'success')
           }}
         >
           {({ values, setFieldValue }) => (
@@ -746,7 +747,7 @@ export default function PropertiesPanel() {
             }
 
             dispatch(setModel(nextModel))
-            toast.success('Глобальные настройки сохранены')
+            showNotification('Глобальные настройки сохранены', 'success')
           }}
         >
           {({ values, setFieldValue }) => (
@@ -896,7 +897,7 @@ export default function PropertiesPanel() {
               const updatedEdges = updateEdgesDistances(nodesWithLabels, edges)
               dispatch(setElements({ nodes: nodesWithLabels, edges: updatedEdges }))
               dispatch(select(null))
-              toast.success('Свойства сохранены')
+              showNotification('Свойства сохранены', 'success')
             }}
           >
             {({ values, setFieldValue, errors }) => (
@@ -1166,7 +1167,7 @@ export default function PropertiesPanel() {
             const updatedEdges = updateEdgesDistances(nodesWithLabels, edges)
             dispatch(setElements({ nodes: nodesWithLabels, edges: updatedEdges }))
             dispatch(select(null))
-            toast.success('Свойства сохранены')
+            showNotification('Свойства сохранены', 'success')
           }}
         >
           {({ values, setFieldValue }) => (
@@ -1752,7 +1753,7 @@ export default function PropertiesPanel() {
 
             dispatch(setElements({ nodes: updatedNodes, edges: updatedEdges }))
             dispatch(select(null))
-            toast.success('Свойства канала сохранены')
+            showNotification('Свойства канала сохранены', 'success')
           }}
         >
           {({ values, setFieldValue }) => {
