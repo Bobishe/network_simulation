@@ -99,30 +99,3 @@ export const generateNodeCode = (
 
   return `${prefix}${idx}`
 }
-
-export const generateNodeLabel = (
-  type: string | undefined,
-  nodes: Node<NodeData>[]
-): string => {
-  if (!type) return `node-${Date.now()}`
-
-  const prefix = `${type}-`
-  const used = new Set<number>()
-
-  nodes.forEach(node => {
-    const label = node.data?.label
-    if (typeof label !== 'string') return
-    if (!label.startsWith(prefix)) return
-    const suffix = parseInt(label.slice(prefix.length), 10)
-    if (!Number.isNaN(suffix)) {
-      used.add(suffix)
-    }
-  })
-
-  let idx = 1
-  while (used.has(idx)) {
-    idx += 1
-  }
-
-  return `${type}-${idx}`
-}

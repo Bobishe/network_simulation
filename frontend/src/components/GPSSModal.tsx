@@ -937,28 +937,6 @@ export default function GPSSModal({ onClose }: Props) {
     return newErrors
   }
 
-  const transformLabelForGPSS = (label: string): string => {
-    return label.replace(/-/g, '')
-  }
-
-  const transformNodesForGPSS = (inputNodes: typeof nodes) => {
-    return inputNodes.map(node => ({
-      ...node,
-      data: node.data
-        ? {
-            ...node.data,
-            label: node.data.label ? transformLabelForGPSS(node.data.label) : node.data.label,
-            interfaces: node.data.interfaces
-              ? node.data.interfaces.map(iface => ({
-                  ...iface,
-                  label: iface.label ? transformLabelForGPSS(iface.label) : iface.label,
-                }))
-              : node.data.interfaces,
-          }
-        : node.data,
-    }))
-  }
-
   const handleDownload = () => {
     const validationResult = validate()
 
@@ -968,14 +946,12 @@ export default function GPSSModal({ onClose }: Props) {
 
     dispatch(setGpssConfig(formData))
 
-    const transformedNodes = transformNodesForGPSS(nodes)
-
     const blob = new Blob(
       [
         JSON.stringify(
           {
             model,
-            nodes: transformedNodes,
+            nodes,
             edges,
             gpss: formData,
           },
