@@ -94,12 +94,16 @@ export default function TopBar() {
       <div className="fixed top-0 left-0 w-full h-12 bg-white border-b flex items-center px-2 z-20">
         <div className="flex items-center gap-4">
           <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={autosaveEnabled}
-              onChange={e => dispatch(setAutosave(e.target.checked))}
-              className="w-4 h-4 accent-blue-500 cursor-pointer"
-            />
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={autosaveEnabled}
+                onChange={e => dispatch(setAutosave(e.target.checked))}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-blue-500 transition-colors" />
+              <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
+            </div>
             <span className="text-sm text-gray-700">Автосохранение</span>
           </label>
           <button
