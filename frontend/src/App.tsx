@@ -2,8 +2,8 @@ import PaletteBar from './components/PaletteBar'
 import TopBar from './components/TopBar'
 import Canvas from './components/Canvas'
 import PropertiesPanel from './components/PropertiesPanel'
+import StatusBar from './components/StatusBar'
 import { useAppSelector } from './hooks'
-import { Toaster } from 'react-hot-toast'
 import { useState } from 'react'
 import TopologyModal from './components/TopologyModal'
 
@@ -15,7 +15,7 @@ export default function App() {
     <>
       <TopBar />
       <div
-        className="h-full pt-12 grid"
+        className="h-full pt-12 pb-10 grid"
         style={{ gridTemplateColumns: selectedId ? '80px 1fr 416px' : '80px 1fr' }}
       >
         <PaletteBar />
@@ -28,8 +28,8 @@ export default function App() {
         >
           <PropertiesPanel />
         </div>
-        <Toaster position="top-right" />
       </div>
+      <StatusBar />
       {showModal && <TopologyModal onClose={() => setShowModal(false)} />}
     </>
   )
