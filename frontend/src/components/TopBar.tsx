@@ -1,10 +1,10 @@
 import { ArrowDownTrayIcon } from '@heroicons/react/24/solid'
 import { useAppDispatch, useAppSelector } from '../hooks'
-import { SVGProps, useCallback, useEffect, useState } from 'react'
+import { SVGProps, useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import classNames from 'classnames'
 import LinkIcon from '../img/link.png'
-import { setAddingType } from '../features/network/networkSlice'
+import { setAddingType, setAutosave } from '../features/network/networkSlice'
 import GPSSModal from './GPSSModal'
 
 function FloppyDiskIcon(props: SVGProps<SVGSVGElement>) {
@@ -17,10 +17,12 @@ function FloppyDiskIcon(props: SVGProps<SVGSVGElement>) {
 
 export default function TopBar() {
   const dispatch = useAppDispatch()
-  const { nodes, edges, model, gpss, topologyId, addingType } = useAppSelector(
+  const { nodes, edges, model, gpss, topologyId, addingType, autosaveEnabled } = useAppSelector(
     state => state.network
   )
   const [showGPSSModal, setShowGPSSModal] = useState(false)
+  const isInitialMount = useRef(true)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleDownload = () => {
     const json = JSON.stringify({ model, nodes, edges, gpss }, null, 2)
@@ -58,10 +60,48 @@ export default function TopBar() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [handleSave])
 
+  // Автосохранение при изменениях
+  useEffect(() => {
+    // Пропускаем начальную загрузку
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+
+    if (!autosaveEnabled || topologyId === null) {
+      return
+    }
+
+    // Отменяем предыдущий таймер
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current)
+    }
+
+    // Debounce: сохраняем через 1 секунду после последнего изменения
+    debounceTimer.current = setTimeout(() => {
+      handleSave()
+    }, 1000)
+
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current)
+      }
+    }
+  }, [nodes, edges, model, gpss, autosaveEnabled, topologyId, handleSave])
+
   return (
     <>
       <div className="fixed top-0 left-0 w-full h-12 bg-white border-b flex items-center px-2 z-20">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={autosaveEnabled}
+              onChange={e => dispatch(setAutosave(e.target.checked))}
+              className="w-4 h-4 accent-blue-500 cursor-pointer"
+            />
+            <span className="text-sm text-gray-700">Автосохранение</span>
+          </label>
           <button
             type="button"
             onClick={() => dispatch(setAddingType(addingType === 'link' ? null : 'link'))}

@@ -11,6 +11,7 @@ export interface NetworkState {
   topologyId: number | null
   selectedId: string | null
   addingType: string | null
+  autosaveEnabled: boolean
   nearby: { ids: string[]; x: number; y: number } | null
   contextMenu: { nodeId: string; x: number; y: number } | null
   interfacePopup: { nodeId: string; x: number; y: number } | null

@@ -25,6 +25,7 @@ const initialState: NetworkState = {
   topologyId: null,
   selectedId: null,
   addingType: null,
+  autosaveEnabled: true,
   nearby: null,
   contextMenu: null,
   interfacePopup: null,
@@ -239,6 +240,9 @@ const networkSlice = createSlice({
     closeDeleteConfirmation(state) {
       state.deleteConfirmation = null
     },
+    setAutosave(state, action: PayloadAction<boolean>) {
+      state.autosaveEnabled = action.payload
+    },
   },
 })
 
@@ -262,5 +266,6 @@ export const {
   closeInterfaces,
   openDeleteConfirmation,
   closeDeleteConfirmation,
+  setAutosave,
 } = networkSlice.actions
 export default networkSlice.reducer
