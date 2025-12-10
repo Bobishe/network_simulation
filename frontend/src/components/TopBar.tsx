@@ -110,7 +110,7 @@ export default function TopBar() {
           <button
             type="button"
             onClick={() => dispatch(setAddingType(addingType === 'link' ? null : 'link'))}
-            title={addingType === 'link' ? 'Выключить режим связи' : 'Включить режим связи'}
+            title={addingType === 'link' ? 'Выключить режим создания каналов' : 'Включить режим создания каналов'}
             className={classNames(
               'flex items-center justify-center w-10 h-10 rounded bg-gray-100 hover:bg-gray-200 border-2',
               addingType === 'link' ? 'border-blue-500' : 'border-transparent'

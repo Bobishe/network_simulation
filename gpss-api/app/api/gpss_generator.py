@@ -55,8 +55,6 @@ class Node(Block):
     def next_int_name(self, interface: NodeData.Data.Interface, direction: Literal['in', 'out']) -> str:
             if direction == 'in':
                 return f'processing_{self.data.id}'
-            if interface.nextHop is not None and interface.nextHop.terminal is not None:
-                return interface.nextHop.terminal
             next_int_data = self.global_data.edges[interface.edgeId].data.channel.to
             next_interface = self.global_data.nodes[next_int_data.nodeId].data.interfaces[next_int_data.portId]
             return next_interface.base_label
@@ -184,8 +182,8 @@ class AS(Node):
             '{indent}ASSIGN    {key__cap_data},(V${key__capacity})'
             '{indent}SPLIT     (P${key__cap_data}/{mtu})'
             '{indent}ASSIGN    {key__type_data},{val__type_data}'
-            '{indent}TRANSFER  ,{key__in_int}\n\n'
-            '{key__to:<{width}} TERMINATE')
+            '{indent}TRANSFER  ,{key__out_int}\n\n'
+            '{key__in_ints:<{width}}\n\n')
         return template.format(
             width=self.code_margin,
             indent='\n' + ' ' * (self.code_margin + 1),
@@ -197,11 +195,16 @@ class AS(Node):
             key__capacity=self.data.data.generator.capacitySource,
             key__type_data='type_data',
             val__type_data=self.data.data.generator.typeData,
-            key__in_int=', '.join(self.next_int_name(interface=interface,
+            key__out_int=','.join(self.next_int_name(interface=interface,
                                                      direction='out')
-                                 for interface in self.data.data.interfaces.values()),
-            key__to=f'to_AS')
-            # key__to=f'to_{self.data.id}')
+                                 for interface in self.data.data.interfaces.values()
+                                 if interface.direction == 'out'),
+            key__in_ints=f'\n'.join(
+                '{key__in_int:<{width}} TERMINATE'.format(
+                    width=self.code_margin,
+                    key__in_int=interface.base_label) 
+                for interface in self.data.data.interfaces.values()
+                if interface.direction == 'in'))
 
 
 class SC(Node):
@@ -256,7 +259,8 @@ class SSOP(Node):
             '{indent}ASSIGN    {key__cap_data},(V${key__capacity})'
             '{indent}SPLIT     (P${key__cap_data}/{mtu})'
             '{indent}ASSIGN    {key__type_data},{val__type_data}'
-            '{indent}TRANSFER  ,{key__in_int}\n\n')
+            '{indent}TRANSFER  ,{key__in_int}\n\n'
+            '{key__in_ints:<{width}}\n\n')
         return template.format(
             width=self.code_margin,
             indent='\n' + ' ' * (self.code_margin + 1),
@@ -268,11 +272,17 @@ class SSOP(Node):
             key__capacity=self.data.data.generator.capacitySource,
             key__type_data='type_data',
             val__type_data=self.data.data.generator.typeData,
-            key__in_int=', '.join(self.next_int_name(interface=interface,
+            key__in_int=','.join(self.next_int_name(interface=interface,
                                                      direction='out')
-                                 for interface in self.data.data.interfaces.values()),
-            key__to=f'to_SSOP')
-            # key__to=f'to_{self.data.id}')
+                                 for interface in self.data.data.interfaces.values()
+                                 if interface.direction == 'out'),
+            key__in_ints=f'\n'.join(
+                '{key__in_int:<{width}} TERMINATE'.format(
+                    width=self.code_margin,
+                    key__in_int=interface.base_label) 
+                for interface in self.data.data.interfaces.values()
+                if interface.direction == 'in'))
+    
 
 
 class Generator(Block):

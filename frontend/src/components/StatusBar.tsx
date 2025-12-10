@@ -11,7 +11,7 @@ export default function StatusBar() {
         {addingType === 'link' && (
           <div className="bg-blue-500 text-white px-3 py-1 rounded text-sm flex items-center gap-2">
             <span className="inline-block w-2 h-2 bg-white rounded-full animate-pulse" />
-            <span>Режим создания связей активен</span>
+            <span>Режим создания каналов активен</span>
           </div>
         )}
       </div>

@@ -1,4 +1,3 @@
-# from pathlib import Path
 from typing import Literal
 import io
 
@@ -16,13 +15,7 @@ api_router = APIRouter(prefix='/gpss', tags=['Generator'])
 
 @api_router.post('/gen', response_model=GPSSCode, description='Генерация GPSS-кода на основе входных парамеров.')
 async def gpss_gen(model_data: ModelData) -> GPSSCode:
-    result = Generator(data=model_data).code()
-    
-    # output_file = Path('latest_model.gss')
-    # with open(output_file, 'w' if output_file.exists() else 'x', encoding='utf-8') as f:
-    #     f.write(result.code)
-    
-    return result
+    return Generator(data=model_data).code()
 
 
 @api_router.post('/gen-file', description='Генерация файла с расширением `.gps.txt` с GPSS-кодом на основе входных парамеров.')
