@@ -27,12 +27,20 @@ class ModelData(CBaseModel):
     class Traffic(CBaseModel):
         class Capacity(CBaseModel):
             class Params(CBaseModel):
-                maxBytes: int
-                minBytes: int
+                # DUNIFORM parameters
+                rn: Optional[int] = 1  # RN stream number (1-7)
+                min: Optional[int] = None  # min value
+                max: Optional[int] = None  # max value
+                # Binomial/Negbinom parameters
+                n: Optional[int] = None  # number of trials
+                nc: Optional[int] = None  # number of successes for negbinom
+                p: Optional[float] = None  # probability
+                # Poisson parameter
+                m: Optional[float] = None  # mean
 
             dist: str
             params: Params
-        
+
         capacity: Capacity
     
     rng: Rng

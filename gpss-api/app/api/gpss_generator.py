@@ -300,19 +300,40 @@ class Generator(Block):
         footer_2 = f'\n\n*' + '=' * self.code_width + '*'
         indent = '\n' + ' ' * (self.code_margin + 1)
         
-        config_1_template = (
-            '{var:<{width}} VARIABLE  ({dist}(1,{min_val},{max_val}))')
         config_2_template = (
             '{indent}GENERATE  {duration}'
             '{indent}TERMINATE 1'
             '{indent}START     1')
 
+        # Generate capacity distribution expression based on distribution type
+        dist_type = self.data.model.traffic.capacity.dist.lower()
+        params = self.data.model.traffic.capacity.params
+        rn = params.rn if params.rn else 1
+
+        if dist_type == 'duniform':
+            # DUNIFORM(RNj, min, max) - Discrete uniform distribution
+            dist_expr = f'DUNIFORM(RN{rn},{params.min},{params.max})'
+        elif dist_type == 'binomial':
+            # Binomial(RNj, n, p) - Binomial distribution
+            dist_expr = f'Binomial(RN{rn},{params.n},{params.p})'
+        elif dist_type == 'negbinom':
+            # NEGBINOM(RNj, nc, p) - Negative binomial distribution
+            dist_expr = f'NEGBINOM(RN{rn},{params.nc},{params.p})'
+        elif dist_type == 'geometric':
+            # GEOMETRIC(RNj, p) - Geometric distribution
+            dist_expr = f'GEOMETRIC(RN{rn},{params.p})'
+        elif dist_type == 'poisson':
+            # POISSON(RNj, m) - Poisson distribution
+            dist_expr = f'POISSON(RN{rn},{params.m})'
+        else:
+            # Fallback to DUNIFORM for unknown distributions
+            dist_expr = f'DUNIFORM(RN{rn},{params.min},{params.max})'
+
+        config_1_template = '{var:<{width}} VARIABLE  ({dist_expr})'
         config_1 = config_1_template.format(
             width=self.code_margin,
             var='capacity',
-            dist=self.data.model.traffic.capacity.dist,
-            min_val=self.data.model.traffic.capacity.params.minBytes,
-            max_val=self.data.model.traffic.capacity.params.maxBytes)
+            dist_expr=dist_expr)
         config_2 = config_2_template.format(
             indent=indent,
             duration=self.global_data.model.sim.duration)
