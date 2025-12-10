@@ -222,34 +222,29 @@ const streamPolicyOptions: Option[] = [
 
 const dataVolumeDistributionOptions: Option[] = [
   {
-    value: 'uniform',
-    label: 'Равномерное',
-    description: 'Пакеты равновероятно распределены в заданном диапазоне.',
+    value: 'duniform',
+    label: 'Дискретно равномерное (DUNIFORM)',
+    description: 'DUNIFORM(RNj, min, max) — целочисленные значения равновероятно в диапазоне [min, max].',
   },
   {
-    value: 'exponential',
-    label: 'Экспоненциальное',
-    description: 'Подходит для моделирования взрывных потоков.',
+    value: 'binomial',
+    label: 'Биномиальное (Binomial)',
+    description: 'Binomial(RNj, n, p) — n испытаний Бернулли с вероятностью успеха p.',
   },
   {
-    value: 'normal',
-    label: 'Нормальное',
-    description: 'Средние значения с симметричным разбросом.',
+    value: 'negbinom',
+    label: 'Отрицательное биномиальное (NEGBINOM)',
+    description: 'NEGBINOM(RNj, nc, p) — число неудач до nc успехов.',
   },
   {
-    value: 'lognormal',
-    label: 'Логнормальное',
-    description: 'Асимметричное распределение объёмов пакетов.',
+    value: 'geometric',
+    label: 'Геометрическое (GEOMETRIC)',
+    description: 'GEOMETRIC(RNj, p) — число испытаний до первого успеха.',
   },
   {
-    value: 'erlang',
-    label: 'Эрланга',
-    description: 'Суперпозиция экспоненциальных фаз.',
-  },
-  {
-    value: 'empirical',
-    label: 'Эмпирическое',
-    description: 'Использовать ранее собранные данные.',
+    value: 'poisson',
+    label: 'Пуассона (POISSON)',
+    description: 'POISSON(RNj, m) — распределение с математическим ожиданием m.',
   },
 ]
 
@@ -1001,8 +996,42 @@ export default function GPSSModal({ onClose, onApiResult }: Props) {
         : edge.data,
     }))
 
+    // Build capacity params from distribution parameters
+    const distParams = formData.trafficCharacteristics.dataVolumeParameters
+    const capacityParams: Record<string, number | undefined> = {
+      rn: distParams.rn ? parseInt(distParams.rn, 10) : 1,
+    }
+
+    // Map distribution parameters based on distribution type
+    const distType = formData.trafficCharacteristics.dataVolumeDistribution
+    if (distType === 'duniform') {
+      capacityParams.min = distParams.min ? parseInt(distParams.min, 10) : undefined
+      capacityParams.max = distParams.max ? parseInt(distParams.max, 10) : undefined
+    } else if (distType === 'binomial') {
+      capacityParams.n = distParams.n ? parseInt(distParams.n, 10) : undefined
+      capacityParams.p = distParams.p ? parseFloat(distParams.p) : undefined
+    } else if (distType === 'negbinom') {
+      capacityParams.nc = distParams.nc ? parseInt(distParams.nc, 10) : undefined
+      capacityParams.p = distParams.p ? parseFloat(distParams.p) : undefined
+    } else if (distType === 'geometric') {
+      capacityParams.p = distParams.p ? parseFloat(distParams.p) : undefined
+    } else if (distType === 'poisson') {
+      capacityParams.m = distParams.m ? parseFloat(distParams.m) : undefined
+    }
+
+    // Update model with distribution settings from GPSS config
+    const updatedModel = {
+      ...model,
+      traffic: {
+        capacity: {
+          dist: formData.trafficCharacteristics.dataVolumeDistribution,
+          params: capacityParams,
+        },
+      },
+    }
+
     const requestData = {
-      model,
+      model: updatedModel,
       nodes: gpssNodes,
       edges: gpssEdges,
       gpss: formData,

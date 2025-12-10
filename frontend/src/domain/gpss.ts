@@ -15,41 +15,29 @@ export const gpssDistributionParameters: Record<
   string,
   GPSSDistributionParameter[]
 > = {
-  uniform: [
-    { key: 'min', label: 'Минимум', placeholder: '0' },
-    { key: 'max', label: 'Максимум', placeholder: '100' },
+  // Integer distributions (целочисленные)
+  duniform: [
+    { key: 'rn', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
+    { key: 'min', label: 'Минимум (min)', placeholder: '64', description: 'Наименьшее значение генерируемой СВ.' },
+    { key: 'max', label: 'Максимум (max)', placeholder: '1500', description: 'Наибольшее значение генерируемой СВ.' },
   ],
-  exponential: [
-    {
-      key: 'lambda',
-      label: 'Параметр λ',
-      placeholder: '0.5',
-      description: 'Интенсивность экспоненциального распределения.',
-    },
+  binomial: [
+    { key: 'rn', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
+    { key: 'n', label: 'Число испытаний (n)', placeholder: '10', description: 'Число испытаний Бернулли.' },
+    { key: 'p', label: 'Вероятность успеха (p)', placeholder: '0.5', description: 'Вероятность успеха при каждом испытании (0-1).' },
   ],
-  normal: [
-    { key: 'mean', label: 'Мат. ожидание μ', placeholder: '500' },
-    { key: 'std', label: 'Стандартное отклонение σ', placeholder: '100' },
+  negbinom: [
+    { key: 'rn', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
+    { key: 'nc', label: 'Число успехов (nc)', placeholder: '5', description: 'Требуемое число успехов.' },
+    { key: 'p', label: 'Вероятность успеха (p)', placeholder: '0.5', description: 'Вероятность успеха при каждом испытании (0-1).' },
   ],
-  lognormal: [
-    { key: 'mu', label: 'μ логнормального распределения', placeholder: '6.2' },
-    {
-      key: 'sigma',
-      label: 'σ логнормального распределения',
-      placeholder: '0.8',
-    },
+  geometric: [
+    { key: 'rn', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
+    { key: 'p', label: 'Вероятность успеха (p)', placeholder: '0.3', description: 'Вероятность успеха (0-1).' },
   ],
-  erlang: [
-    { key: 'k', label: 'Порядок k', placeholder: '2' },
-    { key: 'rate', label: 'Интенсивность λ', placeholder: '0.5' },
-  ],
-  empirical: [
-    {
-      key: 'reference',
-      label: 'Источник данных',
-      placeholder: 'dataset.csv',
-      description: 'Укажите файл или идентификатор эмпирического распределения.',
-    },
+  poisson: [
+    { key: 'rn', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
+    { key: 'm', label: 'Математическое ожидание (m)', placeholder: '100', description: 'Среднее значение распределения.' },
   ],
 }
 
@@ -123,7 +111,7 @@ export type GPSSConfig = {
   statisticsCollection: GPSSStatisticsCollection
 }
 
-export const defaultTrafficDistribution = 'uniform'
+export const defaultTrafficDistribution = 'duniform'
 
 export const createDefaultGPSSConfig = (): GPSSConfig => ({
   experimentControl: {

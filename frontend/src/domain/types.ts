@@ -176,7 +176,7 @@ export const createDefaultModelConfig = (): ModelConfig => ({
   sim: { duration: 1_000 },
   time: { unit: 's' },
   rng: { seed: 1 },
-  traffic: { capacity: { dist: 'Deterministic', params: { minBytes: 1024, maxBytes: 1024 } } },
+  traffic: { capacity: { dist: 'duniform', params: { rn: 1, min: 64, max: 1500 } } },
   packet: { mtu: 65_535 },
   dataTypes: [1, 2],
 })
