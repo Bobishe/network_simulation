@@ -1011,7 +1011,7 @@ export default function GPSSModal({ onClose, onApiResult }: Props) {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/gpss-api/gpss/gen-file', {
+      const response = await fetch('/gpss-api/api/gpss/gen-file?encoding=cp1251', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
