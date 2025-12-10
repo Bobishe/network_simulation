@@ -20,8 +20,15 @@ type DistributionParameter = GPSSDistributionParameter
 
 type FormData = GPSSConfig
 
+interface ApiResult {
+  success: boolean
+  message: string
+  filename?: string
+}
+
 interface Props {
   onClose: () => void
+  onApiResult: (result: ApiResult) => void
 }
 
 const timeUnitOptions: Option[] = [
@@ -843,11 +850,12 @@ function TextInputField({
   )
 }
 
-export default function GPSSModal({ onClose }: Props) {
+export default function GPSSModal({ onClose, onApiResult }: Props) {
   const dispatch = useAppDispatch()
   const { nodes, edges, model, gpss } = useAppSelector(state => state.network)
   const [formData, setFormData] = useState<FormData>(createDefaultGPSSConfig())
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isLoading, setIsLoading] = useState(false)
   const isInitializedRef = useRef(false)
   const shouldSyncRef = useRef(false)
 
@@ -937,7 +945,7 @@ export default function GPSSModal({ onClose }: Props) {
     return newErrors
   }
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const validationResult = validate()
 
     if (Object.keys(validationResult).length > 0) {
@@ -993,29 +1001,63 @@ export default function GPSSModal({ onClose }: Props) {
         : edge.data,
     }))
 
-    const blob = new Blob(
-      [
-        JSON.stringify(
-          {
-            model,
-            nodes: gpssNodes,
-            edges: gpssEdges,
-            gpss: formData,
-          },
-          null,
-          2
-        ),
-      ],
-      {
-        type: 'application/json',
+    const requestData = {
+      model,
+      nodes: gpssNodes,
+      edges: gpssEdges,
+      gpss: formData,
+    }
+
+    setIsLoading(true)
+
+    try {
+      const response = await fetch('/gpss-api/gpss/gen-file', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || `Ошибка сервера: ${response.status}`)
       }
-    )
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'gpss-config.json'
-    a.click()
-    URL.revokeObjectURL(url)
+
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition')
+      let filename = 'model.gps.txt'
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename=([^;]+)/)
+        if (match) {
+          filename = match[1].trim()
+        }
+      }
+
+      // Download the file
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
+
+      // Close modal and show success result
+      onClose()
+      onApiResult({
+        success: true,
+        message: 'GPSS-код успешно сгенерирован',
+        filename,
+      })
+    } catch (error) {
+      onApiResult({
+        success: false,
+        message: error instanceof Error ? error.message : 'Произошла неизвестная ошибка',
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -1373,10 +1415,11 @@ export default function GPSSModal({ onClose }: Props) {
           </button>
           <button
             type="button"
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
             onClick={handleDownload}
+            disabled={isLoading}
           >
-            МОДЕЛИРОВАТЬ
+            {isLoading ? 'Генерация...' : 'МОДЕЛИРОВАТЬ'}
           </button>
         </div>
       </div>

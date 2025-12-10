@@ -7,6 +7,12 @@ import LinkIcon from '../img/link.png'
 import { setAddingType, setAutosave } from '../features/network/networkSlice'
 import GPSSModal from './GPSSModal'
 
+interface ApiResult {
+  success: boolean
+  message: string
+  filename?: string
+}
+
 function FloppyDiskIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
@@ -22,6 +28,7 @@ export default function TopBar() {
     state => state.network
   )
   const [showGPSSModal, setShowGPSSModal] = useState(false)
+  const [apiResult, setApiResult] = useState<ApiResult | null>(null)
   const isInitialMount = useRef(true)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -146,7 +153,56 @@ export default function TopBar() {
           </button>
         </div>
       </div>
-      {showGPSSModal && <GPSSModal onClose={() => setShowGPSSModal(false)} />}
+      {showGPSSModal && (
+        <GPSSModal
+          onClose={() => setShowGPSSModal(false)}
+          onApiResult={setApiResult}
+        />
+      )}
+      {apiResult && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 relative">
+            <button
+              type="button"
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+              onClick={() => setApiResult(null)}
+            >
+              ✕
+            </button>
+            <div className="flex items-center gap-3 mb-4">
+              {apiResult.success ? (
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+              )}
+              <h3 className="text-lg font-semibold">
+                {apiResult.success ? 'Успех' : 'Ошибка'}
+              </h3>
+            </div>
+            <p className="text-gray-600 mb-2">{apiResult.message}</p>
+            {apiResult.filename && (
+              <p className="text-sm text-gray-500">Файл: {apiResult.filename}</p>
+            )}
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                onClick={() => setApiResult(null)}
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
