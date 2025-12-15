@@ -130,6 +130,9 @@ export interface Edge {
   meta?: Record<string, unknown>
 }
 
+// Alias for backwards compatibility
+export type ChannelConfig = Edge
+
 export interface SimulationConfig {
   duration: number
 }

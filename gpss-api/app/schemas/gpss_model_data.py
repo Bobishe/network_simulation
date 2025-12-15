@@ -1,7 +1,7 @@
-from typing import Any, Optional, Union, Literal
+from typing import Any, Optional, Union, Literal, Annotated
 from functools import cached_property
 
-from pydantic import BaseModel, Field, AliasChoices, field_validator, computed_field, ConfigDict, model_validator
+from pydantic import BaseModel, Field, AliasChoices, field_validator, computed_field, ConfigDict, model_validator, Discriminator
 
 
 class CBaseModel(BaseModel):
@@ -121,12 +121,25 @@ class NodeData(CBaseModel):
 class EdgeData(CBaseModel):
     class Data(CBaseModel):
         class Channel(CBaseModel):
-            class To(CBaseModel):
+            class ToNode(CBaseModel):
+                """Endpoint pointing to a node port"""
+                kind: Literal['node'] = 'node'
                 nodeId: str
                 portId: str
+                inPortIdx: Optional[int] = None
+
+            class ToTerminal(CBaseModel):
+                """Endpoint pointing to a terminal (to_AS or to_SSOP)"""
+                kind: Literal['terminal']
+                terminal: Literal['to_AS', 'to_SSOP']
 
             id: str
-            to: To
+            to: Annotated[Union[ToNode, ToTerminal], Field(discriminator='kind')]
+
+            @property
+            def is_terminal(self) -> bool:
+                """Check if this channel points to a terminal"""
+                return getattr(self.to, 'kind', None) == 'terminal'
 
         channel: Channel
 
