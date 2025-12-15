@@ -962,9 +962,11 @@ export default function GPSSModal({ onClose, onApiResult }: Props) {
               typeof node.data.label === 'string'
                 ? removeDashes(node.data.label)
                 : node.data.label,
-            interfaces: node.data.interfaces?.map((iface: { edgeId?: string; [key: string]: unknown }) => ({
+            interfaces: node.data.interfaces?.map(iface => ({
               ...iface,
-              edgeId: iface.edgeId ? removeDashes(iface.edgeId) : iface.edgeId,
+              edgeId: removeDashes(iface.edgeId),
+              connectedNodeId: removeDashes(iface.connectedNodeId),
+              connectedNodeLabel: removeDashes(iface.connectedNodeLabel),
             })),
           }
         : node.data,
