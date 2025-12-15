@@ -312,22 +312,22 @@ class Generator(Block):
 
         if dist_type == 'duniform':
             # DUNIFORM(RNj, min, max) - Discrete uniform distribution
-            dist_expr = f'DUNIFORM(RN{rn},{params.min},{params.max})'
+            dist_expr = f'DUNIFORM({rn},{params.min},{params.max})'
         elif dist_type == 'binomial':
             # Binomial(RNj, n, p) - Binomial distribution
-            dist_expr = f'Binomial(RN{rn},{params.n},{params.p})'
+            dist_expr = f'Binomial({rn},{params.n},{params.p})'
         elif dist_type == 'negbinom':
             # NEGBINOM(RNj, nc, p) - Negative binomial distribution
-            dist_expr = f'NEGBINOM(RN{rn},{params.nc},{params.p})'
+            dist_expr = f'NEGBINOM({rn},{params.nc},{params.p})'
         elif dist_type == 'geometric':
             # GEOMETRIC(RNj, p) - Geometric distribution
-            dist_expr = f'GEOMETRIC(RN{rn},{params.p})'
+            dist_expr = f'GEOMETRIC({rn},{params.p})'
         elif dist_type == 'poisson':
             # POISSON(RNj, m) - Poisson distribution
-            dist_expr = f'POISSON(RN{rn},{params.m})'
+            dist_expr = f'POISSON({rn},{params.m})'
         else:
             # Fallback to DUNIFORM for unknown distributions
-            dist_expr = f'DUNIFORM(RN{rn},{params.min},{params.max})'
+            dist_expr = f'DUNIFORM({rn},{params.min},{params.max})'
 
         config_1_template = '{var:<{width}} VARIABLE  ({dist_expr})'
         config_1 = config_1_template.format(
