@@ -967,7 +967,28 @@ export default function GPSSModal({ onClose, onApiResult }: Props) {
               edgeId: removeDashes(iface.edgeId),
               connectedNodeId: removeDashes(iface.connectedNodeId),
               connectedNodeLabel: removeDashes(iface.connectedNodeLabel),
+              nextHop: iface.nextHop
+                ? {
+                    ...iface.nextHop,
+                    nodeId: iface.nextHop.nodeId
+                      ? removeDashes(iface.nextHop.nodeId)
+                      : iface.nextHop.nodeId,
+                  }
+                : iface.nextHop,
             })),
+            generator: node.data.generator
+              ? {
+                  ...node.data.generator,
+                  target: node.data.generator.target
+                    ? {
+                        ...node.data.generator.target,
+                        nodeId: node.data.generator.target.nodeId
+                          ? removeDashes(node.data.generator.target.nodeId)
+                          : node.data.generator.target.nodeId,
+                      }
+                    : node.data.generator.target,
+                }
+              : node.data.generator,
           }
         : node.data,
     }))
@@ -1017,7 +1038,7 @@ export default function GPSSModal({ onClose, onApiResult }: Props) {
     // Build capacity params from distribution parameters
     const distParams = formData.trafficCharacteristics.dataVolumeParameters
     const capacityParams: Record<string, number | undefined> = {
-      rn: distParams.rn ? parseInt(distParams.rn, 10) : 1,
+      stream: distParams.stream ? parseInt(distParams.stream, 10) : 1,
     }
 
     // Map distribution parameters based on distribution type
