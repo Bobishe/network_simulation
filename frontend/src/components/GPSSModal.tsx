@@ -972,31 +972,47 @@ export default function GPSSModal({ onClose, onApiResult }: Props) {
         : node.data,
     }))
 
-    const gpssEdges = edges.map(edge => ({
-      ...edge,
-      id: removeDashes(edge.id),
-      source: removeDashes(edge.source),
-      target: removeDashes(edge.target),
-      data: edge.data?.channel
-        ? {
-            ...edge.data,
-            channel: {
-              ...edge.data.channel,
-              id: removeDashes(edge.data.channel.id),
-              from: {
-                ...edge.data.channel.from,
-                nodeId: removeDashes(edge.data.channel.from.nodeId),
-              },
-              to: {
-                ...edge.data.channel.to,
-                nodeId: edge.data.channel.to.nodeId
-                  ? removeDashes(edge.data.channel.to.nodeId)
-                  : edge.data.channel.to.nodeId,
-              },
-            },
+    const gpssEdges = edges.map(edge => {
+      if (!edge.data?.channel) {
+        return {
+          ...edge,
+          id: removeDashes(edge.id),
+          source: removeDashes(edge.source),
+          target: removeDashes(edge.target),
+        }
+      }
+
+      const channel = edge.data.channel
+      // Handle terminal vs node endpoints differently
+      const toEndpoint = channel.to.kind === 'terminal'
+        ? { kind: 'terminal' as const, terminal: channel.to.terminal }
+        : {
+            kind: 'node' as const,
+            nodeId: removeDashes(channel.to.nodeId),
+            portId: channel.to.portId ? removeDashes(channel.to.portId) : channel.to.portId,
+            inPortIdx: channel.to.inPortIdx,
           }
-        : edge.data,
-    }))
+
+      return {
+        ...edge,
+        id: removeDashes(edge.id),
+        source: removeDashes(edge.source),
+        target: removeDashes(edge.target),
+        data: {
+          ...edge.data,
+          channel: {
+            ...channel,
+            id: removeDashes(channel.id),
+            from: {
+              ...channel.from,
+              nodeId: removeDashes(channel.from.nodeId),
+              portId: channel.from.portId ? removeDashes(channel.from.portId) : channel.from.portId,
+            },
+            to: toEndpoint,
+          },
+        },
+      }
+    })
 
     // Build capacity params from distribution parameters
     const distParams = formData.trafficCharacteristics.dataVolumeParameters

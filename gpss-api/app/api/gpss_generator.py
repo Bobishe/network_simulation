@@ -55,7 +55,13 @@ class Node(Block):
     def next_int_name(self, interface: NodeData.Data.Interface, direction: Literal['in', 'out']) -> str:
             if direction == 'in':
                 return f'processing_{self.data.id}'
-            next_int_data = self.global_data.edges[interface.edgeId].data.channel.to
+            edge_channel = self.global_data.edges[interface.edgeId].data.channel
+            # Check if this edge points to a terminal
+            if edge_channel.is_terminal:
+                # For terminal endpoints, return the terminal label directly
+                return edge_channel.to.terminal
+            # For node endpoints, get the next interface's base_label
+            next_int_data = edge_channel.to
             next_interface = self.global_data.nodes[next_int_data.nodeId].data.interfaces[next_int_data.portId]
             return next_interface.base_label
 

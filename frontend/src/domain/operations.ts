@@ -195,7 +195,7 @@ export const removeEdge = (topology: Topology, edgeId: string): Topology => {
     const port = ports.find((p) => p.id === portId)
     if (!port) return node
     const stillUsed = edges.some(
-      (e) => e.from.portId === portId || (e.to && e.to.portId === portId)
+      (e) => e.from.portId === portId || (e.to && e.to.kind === 'node' && e.to.portId === portId)
     )
     if (!stillUsed && !port.persistent && !port.locked) {
       const newPorts = ports.filter((p) => p.id !== portId)
