@@ -89,14 +89,18 @@ const NODE_LOGICAL_TYPE: Record<string, LogicalNodeType> = {
 /**
  * Generates a sequential ID for a node of the given type.
  * Scans existing nodes to find the maximum number used for this type,
- * then returns the next available ID (e.g., leo-1, leo-2, etc.)
+ * then returns the next available ID (e.g., leo1, leo2, etc.)
  */
 function generateSequentialNodeId(type: string, existingNodes: Node[]): string {
-  const pattern = new RegExp(`^${type}-(\\d+)$`)
+  // Match both old format "type-N" and new format "typeN" for backwards compatibility
+  const patternNew = new RegExp(`^${type}(\\d+)$`)
+  const patternOld = new RegExp(`^${type}-(\\d+)$`)
   let maxNumber = 0
 
   for (const node of existingNodes) {
-    const match = node.id.match(pattern)
+    const matchNew = node.id.match(patternNew)
+    const matchOld = node.id.match(patternOld)
+    const match = matchNew || matchOld
     if (match) {
       const num = parseInt(match[1], 10)
       if (num > maxNumber) {
@@ -105,7 +109,7 @@ function generateSequentialNodeId(type: string, existingNodes: Node[]): string {
     }
   }
 
-  return `${type}-${maxNumber + 1}`
+  return `${type}${maxNumber + 1}`
 }
 
 export default function Canvas() {
