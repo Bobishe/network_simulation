@@ -55,13 +55,7 @@ class Node(Block):
     def next_int_name(self, interface: NodeData.Data.Interface, direction: Literal['in', 'out']) -> str:
             if direction == 'in':
                 return f'processing_{self.data.id}'
-            edge_channel = self.global_data.edges[interface.edgeId].data.channel
-            # Check if this edge points to a terminal
-            if edge_channel.is_terminal:
-                # For terminal endpoints, return the terminal label directly
-                return edge_channel.to.terminal
-            # For node endpoints, get the next interface's base_label
-            next_int_data = edge_channel.to
+            next_int_data = self.global_data.edges[interface.edgeId].data.channel.to
             next_interface = self.global_data.nodes[next_int_data.nodeId].data.interfaces[next_int_data.portId]
             return next_interface.base_label
 
@@ -182,35 +176,33 @@ class AS(Node):
         self.code_header = f'[Генератор трафика от абонентов кластера | {self.data.id}{self.header_label}]'
         
     def code_generator(self):
-        template = (
+        template_gen = (
             f'{self.gen_input_data()}\n'
             '{indent}GENERATE  ({val__dist}(1,0,1/{key__la_gen}))'
             '{indent}ASSIGN    {key__cap_data},(V${key__capacity})'
             '{indent}SPLIT     (P${key__cap_data}/{mtu})'
             '{indent}ASSIGN    {key__type_data},{val__type_data}'
-            '{indent}TRANSFER  ,{key__out_int}\n\n'
-            '{key__in_ints:<{width}}\n\n')
-        return template.format(
-            width=self.code_margin,
-            indent='\n' + ' ' * (self.code_margin + 1),
-            key__la_gen=f'la_gen_{self.data.id}',
-            val__la_gen=self.data.data.generator.lambda_,
-            val__dist=list(self.data.data.interfaces.values())[0].service.dist,
-            key__cap_data=f'cap_data_AS',
-            mtu=self.global_data.model.packet.mtu,
-            key__capacity=self.data.data.generator.capacitySource,
-            key__type_data='type_data',
-            val__type_data=self.data.data.generator.typeData,
-            key__out_int=','.join(self.next_int_name(interface=interface,
-                                                     direction='out')
-                                 for interface in self.data.data.interfaces.values()
-                                 if interface.direction == 'out'),
+            '{indent}TRANSFER  ,{key__out_int}\n\n')
+        return '{generator}{key__in_ints}\n\n'.format(
+            generator='\n'.join(template_gen.format(
+                width=self.code_margin,
+                indent='\n' + ' ' * (self.code_margin + 1),
+                key__la_gen=f'la_gen_{self.data.id}',
+                val__la_gen=self.data.data.generator.lambda_,
+                val__dist=interface.service.dist,
+                key__cap_data=f'cap_data_AS',
+                mtu=self.global_data.model.packet.mtu,
+                key__capacity=self.data.data.generator.capacitySource,
+                key__type_data='type_data',
+                val__type_data=self.data.data.generator.typeData,
+                key__out_int=self.next_int_name(interface=interface, direction='out'))
+                for interface in self.data.data.interfaces.values() if interface.direction == 'out'),
             key__in_ints=f'\n'.join(
                 '{key__in_int:<{width}} TERMINATE'.format(
                     width=self.code_margin,
                     key__in_int=interface.base_label) 
-                for interface in self.data.data.interfaces.values()
-                if interface.direction == 'in'))
+                for interface in self.data.data.interfaces.values() if interface.direction == 'in')
+        )
 
 
 class SC(Node):
@@ -306,40 +298,19 @@ class Generator(Block):
         footer_2 = f'\n\n*' + '=' * self.code_width + '*'
         indent = '\n' + ' ' * (self.code_margin + 1)
         
+        config_1_template = (
+            '{var:<{width}} VARIABLE  ({dist}(1,{min_val},{max_val}))')
         config_2_template = (
             '{indent}GENERATE  {duration}'
             '{indent}TERMINATE 1'
             '{indent}START     1')
 
-        # Generate capacity distribution expression based on distribution type
-        dist_type = self.data.model.traffic.capacity.dist.lower()
-        params = self.data.model.traffic.capacity.params
-        rn = params.rn if params.rn else 1
-
-        if dist_type == 'duniform':
-            # DUNIFORM(RNj, min, max) - Discrete uniform distribution
-            dist_expr = f'DUNIFORM({rn},{params.min},{params.max})'
-        elif dist_type == 'binomial':
-            # Binomial(RNj, n, p) - Binomial distribution
-            dist_expr = f'Binomial({rn},{params.n},{params.p})'
-        elif dist_type == 'negbinom':
-            # NEGBINOM(RNj, nc, p) - Negative binomial distribution
-            dist_expr = f'NEGBINOM({rn},{params.nc},{params.p})'
-        elif dist_type == 'geometric':
-            # GEOMETRIC(RNj, p) - Geometric distribution
-            dist_expr = f'GEOMETRIC({rn},{params.p})'
-        elif dist_type == 'poisson':
-            # POISSON(RNj, m) - Poisson distribution
-            dist_expr = f'POISSON({rn},{params.m})'
-        else:
-            # Fallback to DUNIFORM for unknown distributions
-            dist_expr = f'DUNIFORM({rn},{params.min},{params.max})'
-
-        config_1_template = '{var:<{width}} VARIABLE  ({dist_expr})'
         config_1 = config_1_template.format(
             width=self.code_margin,
             var='capacity',
-            dist_expr=dist_expr)
+            dist=self.data.model.traffic.capacity.dist,
+            min_val=self.data.model.traffic.capacity.params.minBytes,
+            max_val=self.data.model.traffic.capacity.params.maxBytes)
         config_2 = config_2_template.format(
             indent=indent,
             duration=self.global_data.model.sim.duration)

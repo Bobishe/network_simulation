@@ -1,7 +1,7 @@
-from typing import Any, Optional, Union, Literal, Annotated
+from typing import Any, Optional, Union, Literal
 from functools import cached_property
 
-from pydantic import BaseModel, Field, AliasChoices, field_validator, computed_field, ConfigDict, model_validator, Discriminator
+from pydantic import BaseModel, Field, AliasChoices, field_validator, computed_field, ConfigDict, model_validator
 
 
 class CBaseModel(BaseModel):
@@ -27,20 +27,12 @@ class ModelData(CBaseModel):
     class Traffic(CBaseModel):
         class Capacity(CBaseModel):
             class Params(CBaseModel):
-                # DUNIFORM parameters
-                rn: Optional[int] = 1  # RN stream number (1-7)
-                min: Optional[int] = None  # min value
-                max: Optional[int] = None  # max value
-                # Binomial/Negbinom parameters
-                n: Optional[int] = None  # number of trials
-                nc: Optional[int] = None  # number of successes for negbinom
-                p: Optional[float] = None  # probability
-                # Poisson parameter
-                m: Optional[float] = None  # mean
+                maxBytes: int
+                minBytes: int
 
             dist: str
             params: Params
-
+        
         capacity: Capacity
     
     rng: Rng
@@ -121,25 +113,12 @@ class NodeData(CBaseModel):
 class EdgeData(CBaseModel):
     class Data(CBaseModel):
         class Channel(CBaseModel):
-            class ToNode(CBaseModel):
-                """Endpoint pointing to a node port"""
-                kind: Literal['node'] = 'node'
+            class To(CBaseModel):
                 nodeId: str
                 portId: str
-                inPortIdx: Optional[int] = None
-
-            class ToTerminal(CBaseModel):
-                """Endpoint pointing to a terminal (to_AS or to_SSOP)"""
-                kind: Literal['terminal']
-                terminal: Literal['to_AS', 'to_SSOP']
 
             id: str
-            to: Annotated[Union[ToNode, ToTerminal], Field(discriminator='kind')]
-
-            @property
-            def is_terminal(self) -> bool:
-                """Check if this channel points to a terminal"""
-                return getattr(self.to, 'kind', None) == 'terminal'
+            to: To
 
         channel: Channel
 

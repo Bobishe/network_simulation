@@ -71,11 +71,11 @@ export const ensureEdgeChannel = (
     }
   } else {
     const nodeId =
-      (existing?.to.kind === 'node' ? existing.to.nodeId : undefined) ??
+      (existing?.to.kind === 'node' && existing.to.nodeId) ??
       targetNode?.id ??
       ''
     const inPortIdx =
-      (existing?.to.kind === 'node' ? existing.to.inPortIdx : undefined) ??
+      (existing?.to.kind === 'node' && existing.to.inPortIdx) ??
       targetInterface?.idx ??
       1
     const portId = targetInterface?.id ?? (existing?.to.kind === 'node' ? existing.to.portId : undefined)

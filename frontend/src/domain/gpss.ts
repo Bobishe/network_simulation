@@ -17,26 +17,26 @@ export const gpssDistributionParameters: Record<
 > = {
   // Integer distributions (целочисленные)
   duniform: [
-    { key: 'stream', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
+    { key: 'rn', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
     { key: 'min', label: 'Минимум (min)', placeholder: '64', description: 'Наименьшее значение генерируемой СВ.' },
     { key: 'max', label: 'Максимум (max)', placeholder: '1500', description: 'Наибольшее значение генерируемой СВ.' },
   ],
   binomial: [
-    { key: 'stream', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
+    { key: 'rn', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
     { key: 'n', label: 'Число испытаний (n)', placeholder: '10', description: 'Число испытаний Бернулли.' },
     { key: 'p', label: 'Вероятность успеха (p)', placeholder: '0.5', description: 'Вероятность успеха при каждом испытании (0-1).' },
   ],
   negbinom: [
-    { key: 'stream', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
+    { key: 'rn', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
     { key: 'nc', label: 'Число успехов (nc)', placeholder: '5', description: 'Требуемое число успехов.' },
     { key: 'p', label: 'Вероятность успеха (p)', placeholder: '0.5', description: 'Вероятность успеха при каждом испытании (0-1).' },
   ],
   geometric: [
-    { key: 'stream', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
+    { key: 'rn', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
     { key: 'p', label: 'Вероятность успеха (p)', placeholder: '0.3', description: 'Вероятность успеха (0-1).' },
   ],
   poisson: [
-    { key: 'stream', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
+    { key: 'rn', label: 'Номер генератора RN (1-7)', placeholder: '1', description: 'Номер потока случайных чисел (RNj).' },
     { key: 'm', label: 'Математическое ожидание (m)', placeholder: '100', description: 'Среднее значение распределения.' },
   ],
 }

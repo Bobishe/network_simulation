@@ -1419,16 +1419,16 @@ export default function PropertiesPanel() {
     const channel = ensureEdgeChannel(edge as ReactFlowEdge<ChannelEdgeData>, nodes)
     const sourceNode =
       nodes.find(n => n.id === channel.from.nodeId) || nodes.find(n => n.id === edge.source)
-    const toNodeId = channel.to.kind === 'node' ? channel.to.nodeId : null
-    const targetNode = toNodeId
-      ? nodes.find(n => n.id === toNodeId)
-      : nodes.find(n => n.id === edge.target)
+    const targetNode =
+      channel.to.kind === 'node'
+        ? nodes.find(n => n.id === channel.to.nodeId)
+        : nodes.find(n => n.id === edge.target)
     const sourceLabel = sourceNode?.data?.label
       ? String(sourceNode.data.label)
       : sourceNode?.id ?? channel.from.nodeId
     const targetLabel = targetNode?.data?.label
       ? String(targetNode.data.label)
-      : targetNode?.id ?? (toNodeId ?? '')
+      : targetNode?.id ?? (channel.to.kind === 'node' ? channel.to.nodeId : '')
 
     const sourceInterfaces = Array.isArray(sourceNode?.data?.interfaces)
       ? (sourceNode!.data!.interfaces as NodeInterface[])
